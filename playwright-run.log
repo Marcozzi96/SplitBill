@@ -1,0 +1,36 @@
+
+Running 6 tests using 6 workers
+
+(node:11360) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11532) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21376) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [mobile-chrome] › e2e\auth.spec.ts:18:3 › auth › i link tra login e registrazione funzionano (907ms)
+  ✓  2 [desktop-chrome] › e2e\auth.spec.ts:5:3 › auth › la pagina di login mostra il form di accesso (958ms)
+  ✓  1 [mobile-chrome] › e2e\auth.spec.ts:5:3 › auth › la pagina di login mostra il form di accesso (1.1s)
+  ✓  4 [desktop-chrome] › e2e\auth.spec.ts:13:3 › auth › le pagine protette reindirizzano a /login senza token (1.1s)
+  ✓  6 [desktop-chrome] › e2e\auth.spec.ts:18:3 › auth › i link tra login e registrazione funzionano (1.1s)
+  ✓  5 [mobile-chrome] › e2e\auth.spec.ts:13:3 › auth › le pagine protette reindirizzano a /login senza token (1.2s)
+Error: worker-2 process did not exit within 300000ms after stop, force-killed it
+Error: worker-3 process did not exit within 300000ms after stop, force-killed it
+Error: worker-0 process did not exit within 300000ms after stop, force-killed it
+Error: worker-4 process did not exit within 300000ms after stop, force-killed it
+Error: worker-5 process did not exit within 300000ms after stop, force-killed it
+Error: worker-1 process did not exit within 300000ms after stop, force-killed it
+Error: worker-0 process did not exit within 300000ms after stop, force-killed it
+Error: worker-1 process did not exit within 300000ms after stop, force-killed it
+Error: worker-2 process did not exit within 300000ms after stop, force-killed it
+Error: worker-3 process did not exit within 300000ms after stop, force-killed it
+Error: worker-5 process did not exit within 300000ms after stop, force-killed it
+Error: worker-4 process did not exit within 300000ms after stop, force-killed it
+
+  6 passed (5.1m)
+  12 errors were not a part of any test, see above for details

@@ -20,6 +20,7 @@ npm install          # installazione dipendenze
 npm run dev          # dev server su http://localhost:3000 (porta allineata al CORS del backend)
 npm run build        # type-check (tsc --noEmit) + build produzione
 npm test             # vitest run
+npm run test:e2e     # test E2E Playwright (avvia da solo il dev server; i flussi auth richiedono il backend su :8080)
 npm run lint         # eslint
 npm run format       # prettier
 npm run gen:types    # rigenera src/api/types.ts da http://localhost:8080/v3/api-docs
@@ -43,6 +44,7 @@ src/
 ├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
 ├── router.tsx
 └── main.tsx
+e2e/                # test E2E Playwright (esclusi da Vitest)
 ```
 
 ## Convenzioni vincolanti

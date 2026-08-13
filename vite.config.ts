@@ -1,6 +1,5 @@
-/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -36,5 +35,10 @@ export default defineConfig({
   // Porta 3000: in dev il CORS del backend ammette http://localhost:3000.
   // host: true permette il test da smartphone in LAN (vite --host).
   server: { host: true, port: 3000 },
-  test: { environment: 'jsdom', globals: true },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    // Gli spec E2E (Playwright) vivono in e2e/ e non devono girare sotto Vitest.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
+  },
 })
