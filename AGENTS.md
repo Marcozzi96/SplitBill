@@ -36,7 +36,10 @@ src/
 │   ├── types.ts    # GENERATO da openapi-typescript — non editare a mano
 │   └── hooks/      # useLogin, useGroups, useBills, ...
 ├── auth/           # context utente, route guard, storage token
-├── components/     # componenti UI riusabili (shadcn/ui)
+├── components/     # componenti UI riusabili
+│   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
+│   └── AppLayout.tsx  # layout con bottom navigation mobile
+├── lib/            # utilità condivise (cn, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
 ├── router.tsx
 └── main.tsx
