@@ -1,5 +1,407 @@
-import PlaceholderPage from '@/components/PlaceholderPage'
+import { useState, type FormEvent } from 'react'
+import { Check, LoaderCircle, UserPlus, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { getApiErrorMessage } from '@/api/errors'
+import {
+  useAcceptFriendship,
+  useCancelFriendship,
+  useFriends,
+  useFriendshipReqReceived,
+  useFriendshipReqSent,
+  useRefuseFriendship,
+  useSendFriendshipRequest,
+} from '@/api/hooks/friends'
+import type { components } from '@/api/types'
+
+type UserDTO = components['schemas']['UserDTO']
+type FriendshipReqRecDTO = components['schemas']['FriendshipReqRecDTO']
+type FriendshipReqSenDTO = components['schemas']['FriendshipReqSenDTO']
+
+type FriendsTab = 'friends' | 'received' | 'sent'
+
+const TABS: { id: FriendsTab; label: string }[] = [
+  { id: 'friends', label: 'Amici' },
+  { id: 'received', label: 'Ricevute' },
+  { id: 'sent', label: 'Inviate' },
+]
+
+function formatDate(iso?: string) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const STATO_LABEL: Record<string, string> = {
+  IN_ATTESA: 'In attesa',
+  ACCETTATA: 'Accettata',
+  RIFIUTATA: 'Rifiutata',
+}
 
 export default function FriendsPage() {
-  return <PlaceholderPage title="Amici" sprint="In arrivo con lo Sprint 3." />
+  const [tab, setTab] = useState<FriendsTab>('friends')
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  return (
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Amici</h1>
+        <Button onClick={() => setDialogOpen(true)}>
+          <UserPlus />
+          Nuova richiesta
+        </Button>
+      </div>
+
+      <div className="bg-muted grid grid-cols-3 rounded-lg p-1">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              'text-muted-foreground h-10 rounded-md text-sm font-medium transition-colors',
+              tab === id && 'bg-background text-foreground shadow-sm',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'friends' && <FriendsTab />}
+      {tab === 'received' && <ReceivedTab />}
+      {tab === 'sent' && <SentTab />}
+
+      <SendRequestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+    </div>
+  )
+}
+
+// --- Tab: lista amici ---
+
+function FriendsTab() {
+  const [page, setPage] = useState(0)
+  const friendsQuery = useFriends(page)
+  const cancelMutation = useCancelFriendship()
+  const [toRemove, setToRemove] = useState<UserDTO | null>(null)
+
+  return (
+    <TabBody
+      query={friendsQuery}
+      emptyText="Nessun amico ancora: invia la prima richiesta."
+      page={page}
+      onPageChange={setPage}
+    >
+      {(friendsQuery.data?.content ?? []).map((friend) => (
+        <Card key={friend.userId}>
+          <CardContent className="flex items-center justify-between gap-2 py-3">
+            <div className="min-w-0">
+              <p className="truncate font-medium">{friend.username}</p>
+              <p className="text-muted-foreground truncate text-sm">{friend.email}</p>
+            </div>
+            <Button variant="destructive" size="sm" onClick={() => setToRemove(friend)}>
+              Rimuovi
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+
+      <Dialog open={!!toRemove} onOpenChange={(open) => !open && setToRemove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rimuovi amico</DialogTitle>
+            <DialogDescription>
+              Vuoi rimuovere {toRemove?.username} dagli amici? Potrai sempre inviare una nuova
+              richiesta in seguito.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToRemove(null)}>
+              Annulla
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              onClick={() =>
+                toRemove?.userId != null &&
+                cancelMutation.mutate(toRemove.userId, {
+                  onSuccess: () => {
+                    toast.success('Amico rimosso')
+                    setToRemove(null)
+                  },
+                  onError: (err) => toast.error(getApiErrorMessage(err)),
+                })
+              }
+            >
+              Rimuovi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TabBody>
+  )
+}
+
+// --- Tab: richieste ricevute ---
+
+function ReceivedTab() {
+  const [page, setPage] = useState(0)
+  const receivedQuery = useFriendshipReqReceived(page)
+  const acceptMutation = useAcceptFriendship()
+  const refuseMutation = useRefuseFriendship()
+
+  const pending = (receivedQuery.data?.content ?? []).filter((r) => r.stato === 'IN_ATTESA')
+
+  function handle(action: 'accept' | 'refuse', req: FriendshipReqRecDTO) {
+    const friendId = req.applicant?.userId
+    if (friendId == null) return
+    const mutation = action === 'accept' ? acceptMutation : refuseMutation
+    mutation.mutate(friendId, {
+      onSuccess: () =>
+        toast.success(action === 'accept' ? 'Richiesta accettata' : 'Richiesta rifiutata'),
+      onError: (err) => toast.error(getApiErrorMessage(err)),
+    })
+  }
+
+  return (
+    <TabBody
+      query={receivedQuery}
+      emptyText="Nessuna richiesta in attesa."
+      page={page}
+      onPageChange={setPage}
+    >
+      {pending.map((req) => (
+        <Card key={req.friendshipId}>
+          <CardContent className="flex flex-col gap-2 py-3">
+            <div>
+              <p className="font-medium">{req.applicant?.username}</p>
+              {req.messaggio && <p className="text-muted-foreground text-sm">“{req.messaggio}”</p>}
+              <p className="text-muted-foreground text-xs">{formatDate(req.dataRichiesta)}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                disabled={acceptMutation.isPending || refuseMutation.isPending}
+                onClick={() => handle('accept', req)}
+              >
+                <Check />
+                Accetta
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={acceptMutation.isPending || refuseMutation.isPending}
+                onClick={() => handle('refuse', req)}
+              >
+                <X />
+                Rifiuta
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </TabBody>
+  )
+}
+
+// --- Tab: richieste inviate ---
+
+function SentTab() {
+  const [page, setPage] = useState(0)
+  const sentQuery = useFriendshipReqSent(page)
+  const refuseMutation = useRefuseFriendship()
+
+  function handleCancel(req: FriendshipReqSenDTO) {
+    const friendId = req.recipient?.userId
+    if (friendId == null) return
+    refuseMutation.mutate(friendId, {
+      onSuccess: () => toast.success('Richiesta annullata'),
+      onError: (err) => toast.error(getApiErrorMessage(err)),
+    })
+  }
+
+  return (
+    <TabBody
+      query={sentQuery}
+      emptyText="Nessuna richiesta inviata."
+      page={page}
+      onPageChange={setPage}
+    >
+      {(sentQuery.data?.content ?? []).map((req) => (
+        <Card key={req.friendshipId}>
+          <CardContent className="flex items-center justify-between gap-2 py-3">
+            <div className="min-w-0">
+              <p className="truncate font-medium">{req.recipient?.username}</p>
+              <p className="text-muted-foreground text-xs">
+                {STATO_LABEL[req.stato ?? ''] ?? req.stato} · {formatDate(req.dataRichiesta)}
+              </p>
+            </div>
+            {req.stato === 'IN_ATTESA' && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={refuseMutation.isPending}
+                onClick={() => handleCancel(req)}
+              >
+                Annulla
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </TabBody>
+  )
+}
+
+// --- Dialog: nuova richiesta di amicizia ---
+
+function SendRequestDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const sendMutation = useSendFriendshipRequest()
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    sendMutation.mutate(
+      { name, message },
+      {
+        onSuccess: () => {
+          toast.success('Richiesta inviata')
+          setName('')
+          setMessage('')
+          onOpenChange(false)
+        },
+        // 400: già amici o richiesta già pendente — il messaggio arriva dal backend.
+        onError: (err) => setError(getApiErrorMessage(err)),
+      },
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nuova richiesta di amicizia</DialogTitle>
+          <DialogDescription>Inserisci username o email della persona da aggiungere.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="friendName">Username o email</FieldLabel>
+              <Input
+                id="friendName"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="friendMessage">Messaggio</FieldLabel>
+              <Input
+                id="friendMessage"
+                required
+                placeholder="Ciao, sono io!"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </Field>
+            {error && <FieldError>{error}</FieldError>}
+            <DialogFooter>
+              <Button type="submit" className="w-full" disabled={sendMutation.isPending}>
+                {sendMutation.isPending ? 'Invio in corso…' : 'Invia richiesta'}
+              </Button>
+            </DialogFooter>
+          </FieldGroup>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// --- Corpo comune dei tab: stati loading/errore/vuoto + paginazione ---
+
+function TabBody({
+  query,
+  emptyText,
+  page,
+  onPageChange,
+  children,
+}: {
+  query: {
+    data?: { content?: unknown[]; totalPages?: number; number?: number }
+    isPending: boolean
+    isError: boolean
+    error: unknown
+    refetch: () => void
+  }
+  emptyText: string
+  page: number
+  onPageChange: (page: number) => void
+  children: React.ReactNode
+}) {
+  if (query.isPending) {
+    return (
+      <div className="flex justify-center py-12">
+        <LoaderCircle className="text-muted-foreground size-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (query.isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <p className="text-muted-foreground">{getApiErrorMessage(query.error)}</p>
+        <Button variant="outline" onClick={() => query.refetch()}>
+          Riprova
+        </Button>
+      </div>
+    )
+  }
+
+  const totalPages = query.data?.totalPages ?? 1
+  const isEmpty = (query.data?.content ?? []).length === 0
+
+  return (
+    <div className="flex flex-col gap-3">
+      {isEmpty ? <p className="text-muted-foreground py-12 text-center">{emptyText}</p> : children}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPageChange(page - 1)}>
+            Precedenti
+          </Button>
+          <span className="text-muted-foreground text-sm">
+            Pagina {page + 1} di {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page + 1 >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+          >
+            Successivi
+          </Button>
+        </div>
+      )}
+    </div>
+  )
 }

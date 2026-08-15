@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Users, UsersRound, Wallet, CircleUserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 
 // Bottom navigation mobile-first: tap target >= 44px (h-16), safe-area per iOS.
 const NAV_ITEMS = [
@@ -12,6 +13,9 @@ const NAV_ITEMS = [
 ] as const
 
 export default function AppLayout() {
+  // Badge con il numero di richieste di amicizia ricevute in attesa.
+  const { data: requestsCount = 0 } = useFriendshipRequestsCount()
+
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 pb-20">
@@ -31,7 +35,14 @@ export default function AppLayout() {
                   )
                 }
               >
-                <Icon className="size-6" />
+                <span className="relative">
+                  <Icon className="size-6" />
+                  {to === '/friends' && requestsCount > 0 && (
+                    <span className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-2.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
+                      {requestsCount > 9 ? '9+' : requestsCount}
+                    </span>
+                  )}
+                </span>
                 {label}
               </NavLink>
             </li>
