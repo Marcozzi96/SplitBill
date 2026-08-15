@@ -9,6 +9,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import FriendsPage from './pages/FriendsPage'
 import GroupsPage from './pages/GroupsPage'
+import GroupDetailPage from './pages/GroupDetailPage'
 import BalancesPage from './pages/BalancesPage'
 import ProfilePage from './pages/ProfilePage'
 
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
           { path: '/', element: <HomePage /> },
           { path: '/friends', element: <FriendsPage /> },
           { path: '/groups', element: <GroupsPage /> },
+          { path: '/groups/:groupId', element: <GroupDetailPage /> },
           { path: '/balances', element: <BalancesPage /> },
           { path: '/profile', element: <ProfilePage /> },
         ],

@@ -3,7 +3,9 @@
 > Piano diviso in sprint per lo sviluppo del frontend di **SplitBill**, basato su `progettazione-fe.md`.
 > Backend già completo e deployato (Spring Boot, `https://javaws.up.railway.app`): il FE consuma solo le API esistenti.
 > Durata ipotizzata: 1 settimana per sprint (stima indicativa, da ricalibrare dopo lo Sprint 1).
-> Ultimo aggiornamento: 2026-08-13
+> Ultimo aggiornamento: 2026-08-15
+
+> **Stato avanzamento**: Sprint 1–4 completati (fondamenta, autenticazione, amici, gruppi). Prossimo: Sprint 5 — Spese.
 
 ---
 
@@ -23,7 +25,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 ---
 
-## Sprint 1 — Fondamenta del progetto
+## Sprint 1 — Fondamenta del progetto ✅
 
 **Obiettivo**: scaffold funzionante con tutto il tooling pronto.
 
@@ -38,7 +40,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: `pnpm dev` avvia, routing tra pagine placeholder funzionante, tipi generati, `lint`/`test`/`build` verdi.
 
-## Sprint 2 — Autenticazione
+## Sprint 2 — Autenticazione ✅
 
 **Obiettivo**: flusso completo registrazione → conferma email → login → logout.
 
@@ -50,7 +52,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: un utente reale si registra, conferma via email, fa login e logout; token persistente tra reload; 401 forza il logout.
 
-## Sprint 3 — Amici
+## Sprint 3 — Amici ✅
 
 **Obiettivo**: gestione completa delle amicizie.
 
@@ -61,7 +63,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: due utenti reali diventano amici passando per richiesta/accettazione; badge aggiornato senza reload.
 
-## Sprint 4 — Gruppi
+## Sprint 4 — Gruppi ✅
 
 **Obiettivo**: creazione e gestione dei gruppi.
 

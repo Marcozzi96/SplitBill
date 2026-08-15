@@ -35,11 +35,12 @@ src/
 ├── api/            # client axios, tipi generati, hook TanStack Query
 │   ├── client.ts   # istanza axios + interceptor JWT/401
 │   ├── types.ts    # GENERATO da openapi-typescript — non editare a mano
-│   └── hooks/      # useLogin, useGroups, useBills, ...
+│   └── hooks/      # useLogin, useFriends, useGroups, useBills, ...
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
 │   └── AppLayout.tsx  # layout con bottom navigation mobile
+│   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 ├── lib/            # utilità condivise (cn, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
 ├── router.tsx
@@ -56,6 +57,8 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400).
 - **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`.
 - **Paginazione**: `?page=0&size=20`, risposta `Page<T>` Spring (`content`, `totalElements`, `totalPages`, `number`, ...).
+- **Uscita da un gruppo**: i debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali (settlement con `groupId` null).
+- **Rimborsi**: passare il `groupId` del settlement; senza `groupId` si saldano solo i debiti personali.
 - **Mutazioni**: dopo ogni mutazione invalidare le query TanStack Query correlate (bilanci, settlement, liste).
 - **Date**: stringhe ISO dal backend (`YYYY-MM-DD` per LocalDate).
 - **Env**: base URL API in `VITE_API_BASE_URL` (vedi `.env.example`). Mai committare `.env`.

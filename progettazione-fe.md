@@ -121,6 +121,12 @@ src/
 
 - Da una voce di settlement ("devi X a Y") → `POST /payments`.
 - Il backend rifiuta con **409** se l'importo supera il debito effettivo: pre-compilare l'importo massimo con il valore del settlement.
+- Passare sempre il `groupId` letto dal `UserSettlementDTO`: i rimborsi **senza** `groupId` saldano solo debiti personali (settlement con `groupId` null), non quelli dentro i gruppi.
+
+### Uscita da un gruppo
+
+- `DELETE /groups/leave/{groupId}`: i debiti/crediti dell'uscente **si estinguono nel gruppo** e vengono trasferiti a livello personale (settlement con `groupId` null, visibili in `/balance/settlements` e saldabili con `POST /payments` senza `groupId`).
+- Dopo l'uscita il gruppo sparisce da `GET /groups` e l'ex-membro non può più operarci (i check di membership considerano solo i membri attivi).
 
 ### Eliminazione gruppo (solo admin)
 
@@ -168,7 +174,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | `BillDTO` | `{ billId: number, description: string, creationDate: "YYYY-MM-DD", amount: number, notes: string, buyer: UserDTO, groupId: number, transactions?: TransactionDTO[] }` |
 | `TransactionDTO` | `{ transactionId: number, amount: number, userId: number }` |
 | `UserBalanceDTO` | `{ userId: number, username: string, totalPaid: number, totalOwed: number, netBalance: number }` — `netBalance = totalPaid − totalOwed` (positivo = ti devono soldi) |
-| `UserSettlementDTO` | `{ counterparty: UserDTO, amount: number, direction: "DEBT"\|"CREDIT" }` — dal punto di vista dell'utente autenticato: `DEBT` = devi `amount` a `counterparty`; `CREDIT` = `counterparty` deve `amount` a te |
+| `UserSettlementDTO` | `{ counterparty: UserDTO, amount: number, direction: "DEBT"\|"CREDIT", groupId: number\|null, groupName: string\|null }` — dal punto di vista dell'utente autenticato: `DEBT` = devi `amount` a `counterparty`; `CREDIT` = `counterparty` deve `amount` a te. `groupId`/`groupName` identificano il gruppo del debito; **null = debito personale** (fuori dai gruppi, tipicamente ereditato da un'uscita) |
 | `SettlementDTO` | `{ debtor: UserDTO, creditor: UserDTO, amount: number }` |
 | `PaymentDTO` | `{ paymentId: number, payer: UserDTO, payee: UserDTO, groupId: number\|null, amount: number, date: "YYYY-MM-DD", notes: string }` |
 | `FriendshipReqRecDTO` | `{ friendshipId: number, applicant: UserDTO, stato: "IN_ATTESA"\|"ACCETTATA"\|"RIFIUTATA", dataRichiesta: "YYYY-MM-DDTHH:mm:ss", messaggio: string }` |
@@ -207,14 +213,14 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Metodo | Path | Input | Output | Note |
 |--------|------|-------|--------|------|
 | POST | `/groups/create?name=&description=` | query + body `number[]` (userId degli amici) | `GroupDTO` | Il creatore diventa `ADMIN` |
-| GET | `/groups?page=&size=` | paginata | `Page<GroupDTO>` | Gruppi dell'utente |
+| GET | `/groups?page=&size=` | paginata | `Page<GroupDTO>` | Gruppi dell'utente (solo membership attive: i gruppi da cui è uscito non compaiono) |
 | GET | `/groups/{groupId}` | path | `GroupDTO` | Solo membri |
 | PUT | `/groups/{groupId}?name=&description=` | query | `GroupDTO` | Solo admin (403) |
 | DELETE | `/groups/{groupId}?force=` | query `force` (default false) | `200` | Solo admin; **409 con debiti pendenti** se `force=false` |
 | POST | `/groups/addUsers/{groupId}` | body `number[]` (userId amici) | `GroupDTO` | |
-| DELETE | `/groups/leave/{groupId}` | path | `200` | Uscita soft; se ultimo membro il gruppo è eliminato |
+| DELETE | `/groups/leave/{groupId}` | path | `200` | Uscita soft; se ultimo membro il gruppo è eliminato. **I debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali** (settlement con `groupId` null) |
 | GET | `/groups/{groupId}/members` | path | `GroupMemberDTO[]` | Membri attivi con ruolo |
-| GET | `/groups/{groupId}/settlement-status` | path | `SettlementDTO[]` | Debiti pendenti tra **tutti** i membri (per dialog eliminazione) |
+| GET | `/groups/{groupId}/settlement-status` | path | `SettlementDTO[]` | Debiti pendenti netti (al netto di rimborsi e uscite) tra i membri — per dialog eliminazione |
 | GET | `/groups/{groupId}/balance` | path | `UserBalanceDTO` | Saldo dell'utente autenticato nel gruppo |
 | GET | `/groups/{groupId}/settlements` | path | `UserSettlementDTO[]` | "Chi deve a chi" dal punto di vista dell'utente, nel gruppo |
 
