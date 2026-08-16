@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 
 // Bottom navigation mobile-first: tap target >= 44px (h-16), safe-area per iOS.
+// Le spese si creano solo dai contesti Amici e Gruppi: niente tab dedicato.
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/friends', label: 'Amici', icon: Users },

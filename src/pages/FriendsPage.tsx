@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Check, LoaderCircle, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -92,64 +93,96 @@ export default function FriendsPage() {
 
 function FriendsTab() {
   const [page, setPage] = useState(0)
+  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
   const friendsQuery = useFriends(page)
   const cancelMutation = useCancelFriendship()
   const [toRemove, setToRemove] = useState<UserDTO | null>(null)
 
-  return (
-    <TabBody
-      query={friendsQuery}
-      emptyText="Nessun amico ancora: invia la prima richiesta."
-      page={page}
-      onPageChange={setPage}
-    >
-      {(friendsQuery.data?.content ?? []).map((friend) => (
-        <Card key={friend.userId}>
-          <CardContent className="flex items-center justify-between gap-2 py-3">
-            <div className="min-w-0">
-              <p className="truncate font-medium">{friend.username}</p>
-              <p className="text-muted-foreground truncate text-sm">{friend.email}</p>
-            </div>
-            <Button variant="destructive" size="sm" onClick={() => setToRemove(friend)}>
-              Rimuovi
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+  // Ricerca client-side: filtra per username/email la pagina caricata.
+  const term = search.trim().toLowerCase()
+  const allFriends = friendsQuery.data?.content ?? []
+  const friends = term
+    ? allFriends.filter(
+        (f) =>
+          f.username?.toLowerCase().includes(term) || f.email?.toLowerCase().includes(term),
+      )
+    : allFriends
 
-      <Dialog open={!!toRemove} onOpenChange={(open) => !open && setToRemove(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rimuovi amico</DialogTitle>
-            <DialogDescription>
-              Vuoi rimuovere {toRemove?.username} dagli amici? Potrai sempre inviare una nuova
-              richiesta in seguito.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setToRemove(null)}>
-              Annulla
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={cancelMutation.isPending}
-              onClick={() =>
-                toRemove?.userId != null &&
-                cancelMutation.mutate(toRemove.userId, {
-                  onSuccess: () => {
-                    toast.success('Amico rimosso')
-                    setToRemove(null)
-                  },
-                  onError: (err) => toast.error(getApiErrorMessage(err)),
-                })
-              }
-            >
-              Rimuovi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </TabBody>
+  return (
+    <div className="flex flex-col gap-3">
+      <Input
+        type="search"
+        placeholder="Cerca per username o email…"
+        aria-label="Cerca amici"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <TabBody
+        query={friendsQuery}
+        emptyText="Nessun amico ancora: invia la prima richiesta."
+        page={page}
+        onPageChange={setPage}
+      >
+        {friends.length === 0 && allFriends.length > 0 ? (
+          <p className="text-muted-foreground py-12 text-center">
+            Nessun amico corrisponde alla ricerca.
+          </p>
+        ) : (
+          friends.map((friend) => (
+            <Card key={friend.userId}>
+              <CardContent className="flex items-center gap-2 py-3">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 text-left"
+                  onClick={() => navigate(`/friends/${friend.userId}`)}
+                >
+                  <p className="truncate font-medium">{friend.username}</p>
+                  <p className="text-muted-foreground truncate text-sm">{friend.email}</p>
+                </button>
+                <Button variant="destructive" size="sm" onClick={() => setToRemove(friend)}>
+                  Rimuovi
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
+
+        <Dialog open={!!toRemove} onOpenChange={(open) => !open && setToRemove(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rimuovi amico</DialogTitle>
+              <DialogDescription>
+                Vuoi rimuovere {toRemove?.username} dagli amici? Potrai sempre inviare una nuova
+                richiesta in seguito.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setToRemove(null)}>
+                Annulla
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={cancelMutation.isPending}
+                onClick={() =>
+                  toRemove?.userId != null &&
+                  cancelMutation.mutate(toRemove.userId, {
+                    onSuccess: () => {
+                      toast.success('Amico rimosso')
+                      setToRemove(null)
+                    },
+                    onError: (err) => toast.error(getApiErrorMessage(err)),
+                  })
+                }
+              >
+                Rimuovi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </TabBody>
+    </div>
   )
 }
 

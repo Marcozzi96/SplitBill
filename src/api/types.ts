@@ -93,13 +93,13 @@ export interface paths {
         get?: never;
         /**
          * Modifica una spesa
-         * @description Consente la modifica solo al buyer della spesa o all'admin del gruppo
+         * @description Consente la modifica a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Con buyerId si può cambiare chi ha pagato.
          */
         put: operations["updateBill"];
         post?: never;
         /**
          * Elimina una spesa
-         * @description Consente l'eliminazione solo al buyer della spesa o all'admin del gruppo
+         * @description Consente l'eliminazione a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore)
          */
         delete: operations["deleteBill"];
         options?: never;
@@ -199,7 +199,7 @@ export interface paths {
         put?: never;
         /**
          * Crea una nuova spesa
-         * @description Crea una spesa con suddivisione personalizzata dei debiti. La somma dei debiti deve essere esattamente uguale all'importo totale.
+         * @description Crea una spesa con suddivisione personalizzata dei debiti. La somma dei debiti deve essere esattamente uguale all'importo totale. Senza groupId la spesa è personale (tra amici): i debitori devono essere amici del buyer. Con buyerId si indica chi ha pagato (default: utente autenticato).
          */
         post: operations["createBill"];
         delete?: never;
@@ -672,26 +672,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/transactions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Elimina una transazione
-         * @description Consente l'eliminazione solo al buyer della spesa correlata o all'admin del gruppo
-         */
-        delete: operations["deleteTransaction"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/groups/leave/{groupId}": {
         parameters: {
             query?: never;
@@ -797,38 +777,38 @@ export interface components {
             messaggio?: string;
         };
         PageFriendshipReqSenDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqSenDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageableObject: {
-            /** Format: int64 */
-            offset?: number;
-            sort?: components["schemas"]["SortObject"];
             paged?: boolean;
-            unpaged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            unpaged?: boolean;
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"];
         };
         SortObject: {
-            empty?: boolean;
             sorted?: boolean;
             unsorted?: boolean;
+            empty?: boolean;
         };
         FriendshipReqRecDTO: {
             /** Format: int64 */
@@ -841,75 +821,75 @@ export interface components {
             messaggio?: string;
         };
         PageFriendshipReqRecDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqRecDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageUserDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["UserDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PagePaymentDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaymentDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageGroupDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["GroupDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         UserSettlementDTO: {
@@ -917,6 +897,9 @@ export interface components {
             amount?: number;
             /** @enum {string} */
             direction?: "DEBT" | "CREDIT";
+            /** Format: int64 */
+            groupId?: number;
+            groupName?: string;
         };
         SettlementDTO: {
             debtor?: components["schemas"]["UserDTO"];
@@ -942,21 +925,21 @@ export interface components {
             netBalance?: number;
         };
         PageBillDTO: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["BillDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
     };
@@ -1239,6 +1222,7 @@ export interface operations {
                 description: string;
                 amount: number;
                 notes: string;
+                buyerId?: number;
             };
             header?: never;
             path: {
@@ -1367,6 +1351,15 @@ export interface operations {
             };
             /** @description Utente non autenticato */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description Destinatario non trovato */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1528,7 +1521,8 @@ export interface operations {
                 description: string;
                 amount: number;
                 notes: string;
-                groupId: number;
+                groupId?: number;
+                buyerId?: number;
             };
             header?: never;
             path?: never;
@@ -2348,40 +2342,6 @@ export interface operations {
                 content: {
                     "*/*": string;
                 };
-            };
-        };
-    };
-    deleteTransaction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Transazione eliminata */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Non autorizzato */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Transazione non trovata */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

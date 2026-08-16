@@ -15,7 +15,14 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <RouterProvider router={router} />
       </AuthProvider>
-      <Toaster richColors position="top-center" />
+      {/* Toast sopra la bottom navigation (h-16 + safe-area); mobileOffset:
+          sonner usa variabili separate sotto i 600px, senza ignorerebbe offset */}
+      <Toaster
+        richColors
+        position="bottom-center"
+        offset={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+        mobileOffset={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+      />
     </QueryClientProvider>
   </StrictMode>,
 )

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
-import { ArrowLeft, LoaderCircle, LogOut, Pencil, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, LogOut, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,9 +16,12 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import FriendPicker from '@/components/FriendPicker'
+import BillCard from '@/components/BillCard'
+import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
 import { useFriends } from '@/api/hooks/friends'
+import { useGroupBills } from '@/api/hooks/bills'
 import {
   getGroupSettlementStatus,
   useAddGroupMembers,
@@ -31,6 +34,8 @@ import {
 import type { components } from '@/api/types'
 
 type SettlementDTO = components['schemas']['SettlementDTO']
+type BillDTO = components['schemas']['BillDTO']
+type GroupMemberDTO = components['schemas']['GroupMemberDTO']
 
 function formatDate(iso?: string) {
   if (!iso) return ''
@@ -107,6 +112,8 @@ function GroupDetailBody({
   const [addOpen, setAddOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
+  const [createBillOpen, setCreateBillOpen] = useState(false)
+  const [membersOpen, setMembersOpen] = useState(false)
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
@@ -123,63 +130,72 @@ function GroupDetailBody({
       </div>
 
       <Card>
-        <CardContent className="flex flex-col gap-1 py-3">
-          {description && <p className="text-sm">{description}</p>}
-          <p className="text-muted-foreground text-xs">Creato il {formatDate(creationDate)}</p>
+        <CardContent className="flex items-center justify-between gap-2 py-3">
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            {description && <p className="text-sm">{description}</p>}
+            <p className="text-muted-foreground text-xs">Creato il {formatDate(creationDate)}</p>
+            <Button variant="outline" size="sm" onClick={() => setMembersOpen(true)}>
+              <Users />
+              Visualizza membri ({members.length})
+            </Button>
+          </div>
+          {/* Azioni sul gruppo: solo icone, sulla stessa riga */}
+          <div className="flex shrink-0 gap-1">
+            {isAdmin && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Modifica gruppo"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Pencil />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  aria-label="Elimina gruppo"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Esci dal gruppo"
+              onClick={() => setLeaveOpen(true)}
+            >
+              <LogOut />
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Membri ({members.length})</h2>
-        {isAdmin && (
-          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-            <UserPlus />
-            Aggiungi
-          </Button>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {members.map((member) => (
-          <Card key={member.userId}>
-            <CardContent className="flex items-center justify-between gap-2 py-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{member.username}</p>
-                <p className="text-muted-foreground truncate text-sm">{member.email}</p>
-              </div>
-              <span
-                className={
-                  member.role === 'ADMIN'
-                    ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
-                    : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
-                }
-              >
-                {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
-              </span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {isAdmin && (
-          <>
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil />
-              Modifica gruppo
-            </Button>
-            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2 />
-              Elimina gruppo
-            </Button>
-          </>
-        )}
-        <Button variant="outline" onClick={() => setLeaveOpen(true)}>
-          <LogOut />
-          Esci dal gruppo
+        <h2 className="text-lg font-semibold">Spese</h2>
+        <Button variant="outline" size="sm" onClick={() => setCreateBillOpen(true)}>
+          <Plus />
+          Nuova spesa
         </Button>
       </div>
 
+      <GroupBills groupId={groupId} members={members} />
+
+      <MembersDialog
+        members={members}
+        isAdmin={isAdmin}
+        open={membersOpen}
+        onOpenChange={setMembersOpen}
+        onAddClick={() => setAddOpen(true)}
+      />
+      <CreateBillDialog
+        groupId={groupId}
+        members={members}
+        open={createBillOpen}
+        onOpenChange={setCreateBillOpen}
+      />
       <EditGroupDialog
         groupId={groupId}
         name={name}
@@ -196,6 +212,180 @@ function GroupDetailBody({
       <DeleteGroupDialog groupId={groupId} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <LeaveGroupDialog groupId={groupId} open={leaveOpen} onOpenChange={setLeaveOpen} />
     </div>
+  )
+}
+
+// --- Dialog: elenco membri del gruppo ---
+
+function MembersDialog({
+  members,
+  isAdmin,
+  open,
+  onOpenChange,
+  onAddClick,
+}: {
+  members: components['schemas']['GroupMemberDTO'][]
+  isAdmin: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddClick: () => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Membri ({members.length})</DialogTitle>
+          <DialogDescription>Partecipanti del gruppo.</DialogDescription>
+        </DialogHeader>
+        <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+          {members.map((member) => (
+            <li key={member.userId} className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{member.username}</p>
+                <p className="text-muted-foreground truncate text-sm">{member.email}</p>
+              </div>
+              <span
+                className={
+                  member.role === 'ADMIN'
+                    ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
+                    : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
+                }
+              >
+                {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {isAdmin && (
+          <DialogFooter>
+            <Button variant="outline" className="w-full" onClick={onAddClick}>
+              <UserPlus />
+              Aggiungi
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// --- Sezione spese del gruppo (lista paginata + modifica/eliminazione) ---
+
+function GroupBills({
+  groupId,
+  members,
+}: {
+  groupId: number
+  members: GroupMemberDTO[]
+}) {
+  const [page, setPage] = useState(0)
+  const billsQuery = useGroupBills(groupId, page)
+  const [editingBill, setEditingBill] = useState<BillDTO | null>(null)
+  const [deletingBill, setDeletingBill] = useState<BillDTO | null>(null)
+
+  if (billsQuery.isPending) {
+    return (
+      <div className="flex justify-center py-6">
+        <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+      </div>
+    )
+  }
+
+  if (billsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <p className="text-muted-foreground">{getApiErrorMessage(billsQuery.error)}</p>
+        <Button variant="outline" onClick={() => billsQuery.refetch()}>
+          Riprova
+        </Button>
+      </div>
+    )
+  }
+
+  const bills = billsQuery.data?.content ?? []
+  const totalPages = billsQuery.data?.totalPages ?? 1
+
+  return (
+    <>
+      {bills.length === 0 ? (
+        <p className="text-muted-foreground py-6 text-center">Nessuna spesa ancora.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {bills.map((bill) => (
+            <BillCard
+              key={bill.billId}
+              bill={bill}
+              // Qualsiasi membro attivo del gruppo può modificare/eliminare le spese.
+              actions={
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Modifica ${bill.description}`}
+                    onClick={() => setEditingBill(bill)}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Elimina ${bill.description}`}
+                    onClick={() => setDeletingBill(bill)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 0}
+            onClick={() => setPage(page - 1)}
+          >
+            Precedenti
+          </Button>
+          <span className="text-muted-foreground text-sm">
+            Pagina {page + 1} di {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page + 1 >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Successivi
+          </Button>
+        </div>
+      )}
+
+      {editingBill && (
+        <EditBillDialog
+          key={editingBill.billId}
+          bill={editingBill}
+          members={members}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingBill(null)
+          }}
+        />
+      )}
+      {deletingBill && (
+        <DeleteBillDialog
+          bill={deletingBill}
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeletingBill(null)
+          }}
+        />
+      )}
+    </>
   )
 }
 

@@ -3,9 +3,9 @@
 > Piano diviso in sprint per lo sviluppo del frontend di **SplitBill**, basato su `progettazione-fe.md`.
 > Backend già completo e deployato (Spring Boot, `https://javaws.up.railway.app`): il FE consuma solo le API esistenti.
 > Durata ipotizzata: 1 settimana per sprint (stima indicativa, da ricalibrare dopo lo Sprint 1).
-> Ultimo aggiornamento: 2026-08-15
+> Ultimo aggiornamento: 2026-08-16
 
-> **Stato avanzamento**: Sprint 1–4 completati (fondamenta, autenticazione, amici, gruppi). Prossimo: Sprint 5 — Spese.
+> **Stato avanzamento**: Sprint 1–5 completati (fondamenta, autenticazione, amici, gruppi, spese). Prossimo: Sprint 6 — Revisione flussi di creazione spesa (richiesta del 2026-08-16).
 
 ---
 
@@ -75,7 +75,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: creazione gruppo con amici, gestione membri e ruoli, eliminazione con e senza debiti pendenti verificata.
 
-## Sprint 5 — Spese
+## Sprint 5 — Spese ✅
 
 **Obiettivo**: il flusso centrale dell'app.
 
@@ -88,7 +88,21 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: creazione spesa con ripartizione libera e bilanciata; modifica/eliminazione; rifiuto 400 gestito con messaggio chiaro.
 
-## Sprint 6 — Bilanci e rimborsi
+## Sprint 6 — Revisione flussi di creazione spesa
+
+**Obiettivo**: le spese si creano solo nel contesto giusto (gruppo o amico); via il tab "Spese" dalla navigazione.
+
+- Rimozione del tab "Spese" dalla bottom navigation (`AppLayout`); eliminazione di `BillsPage`, del suo test e della route `/bills` (le spese restano visibili nel dettaglio gruppo).
+- `BillForm` con checkbox per partecipante: di default tutti selezionati; i deselezionati sono esclusi dalla ripartizione; "Dividi equamente" divide solo tra i selezionati; validazione somma quote solo sui selezionati; almeno un partecipante obbligatorio. In modifica, preselezionati i membri che hanno già una quota.
+- Creazione spesa in **modale** (`CreateBillDialog`, stesso `BillForm` della modifica): dal dettaglio gruppo (con `groupId`) e dal dettaglio amico (senza `groupId`, spesa personale). La pagina `NewBillPage` e la route `/bills/new` sono state eliminate.
+- Spesa personale tra amici: partecipanti = utente corrente + amico; `POST /bills/new` senza `groupId`. **Verifica preventiva sul backend reale**: il contratto OpenAPI dichiara `groupId` obbligatorio — se rifiuta (400) serve una modifica backend (parametro opzionale) prima di chiudere il flusso.
+- `FriendsPage`: box di ricerca che filtra la lista per username/email (client-side, sulla pagina caricata); click sulla card → dettaglio amico.
+- Dettaglio amico: cliccando sulla card di un amico si apre `/friends/{userId}` con l'elenco delle spese **senza gruppo** condivise con quell'amico (filtro client-side su `/bills/getMyBills`: `groupId` nullo e amico coinvolto come buyer o debitore).
+- Test: aggiornare `NewBillPage.test.tsx` (entrambi i flussi), `FriendsPage.test.tsx` (ricerca + pulsante +), test di `BillForm` (checkbox); rimuovere `BillsPage.test.tsx`.
+
+**Done**: nuova spesa creabile solo da dettaglio gruppo o da card amico; checkbox partecipanti con default "tutti"; ricerca amici e dettaglio amico con spese senza gruppo; menu senza "Spese"; lint/test/build verdi.
+
+## Sprint 7 — Bilanci e rimborsi
 
 **Obiettivo**: chiudere il ciclo dei soldi.
 
@@ -99,7 +113,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: da un settlement si registra un rimborso e il bilancio si aggiorna; 409 gestito; dashboard coerente.
 
-## Sprint 7 — Profilo, PWA e rilascio
+## Sprint 8 — Profilo, PWA e rilascio
 
 **Obiettivo**: app completa, installabile e online.
 
@@ -118,14 +132,15 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 | Rischio | Mitigazione |
 |---------|-------------|
 | Contratti API "inusuali" (dati spesa in query params, ripartizione in body) | Testare contro il backend reale fin dallo Sprint 2; esempi curl nel documento di progettazione |
-| CORS non allineato in dev (test da smartphone in LAN) | Allineare `GlobalCorsConfig` e `server.address` del backend prima dei test su device |
+| CORS non allineato in dev (test da smartphone in LAN) | Risolto: il FE usa di default l'host della pagina per le API e il backend accetta origini LAN private via `allowedOriginPatterns` |
 | Token invalidati a ogni restart del backend in dev (chiave JWT effimera) | Impostare `JWT_SECRET` fissa nel backend di dev |
 | Precisione importi (float JSON) | Validazione FE a 2 decimali + controllo somma quote prima dell'invio |
+| Spese personali senza gruppo: il contratto OpenAPI dichiara `groupId` obbligatorio in `POST /bills/new` | Verificare subito contro il backend reale (Sprint 6); se rifiuta, valutare una modifica backend (`groupId` opzionale) prima di implementare il flusso da amico |
 | Link email che puntano al backend invece che al FE | Route FE `/auth/confirmEmail` e `/resetPassword` pronte dallo Sprint 2; `OPEN_LINK` allineato nel rilascio |
 
 ## Dipendenze tra sprint
 
-- Sprint 1 sblocca tutto; Sprint 2 sblocca 3–6 (serve un utente autenticato).
+- Sprint 1 sblocca tutto; Sprint 2 sblocca 3–7 (serve un utente autenticato).
 - Sprint 3 (amici) è prerequisito di Sprint 4 (la creazione gruppo seleziona gli amici).
-- Sprint 5 (spese) è prerequisito di Sprint 6 (bilanci e rimborsi significativi richiedono spese).
-- Sprint 7 richiede il resto completato.
+- Sprint 5 (spese) è prerequisito di Sprint 6 (revisione dei flussi di creazione) e Sprint 7 (bilanci e rimborsi significativi richiedono spese).
+- Sprint 8 richiede il resto completato.

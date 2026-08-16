@@ -2,8 +2,12 @@ import axios from 'axios'
 
 export const TOKEN_KEY = 'splitbill_token'
 
+// In dev il FE può essere aperto da altri device in LAN (es. smartphone sulla
+// stessa wifi): il default segue l'host con cui è stata aperta la pagina, così
+// le API puntano sempre alla macchina che serve il FE. Override con
+// VITE_API_BASE_URL (.env, mai committato) — obbligatorio in produzione.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:8080`,
 })
 
 // Il JWT va su ogni richiesta tranne /auth/** (endpoint pubblici).

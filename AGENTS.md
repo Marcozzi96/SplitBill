@@ -7,7 +7,7 @@ Istruzioni per agenti AI e sviluppatori che lavorano su questo repository.
 Frontend di **SplitBill** (PWA React per dividere spese tra amici e gruppi). Il backend (Spring Boot, repository `javaWS`) è completo e deployato: qui si consumano solo le API esistenti.
 
 - Documento di progettazione: `progettazione-fe.md` (contratti API, DTO, flussi — fonte di verità)
-- Piano di sviluppo: `piano_di_sviluppo.md` (7 sprint, dipendenze, rischi)
+- Piano di sviluppo: `piano_di_sviluppo.md` (8 sprint, dipendenze, rischi)
 
 ## Stack
 
@@ -41,7 +41,9 @@ src/
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
 │   └── AppLayout.tsx  # layout con bottom navigation mobile
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
-├── lib/            # utilità condivise (cn, ...) — alias import '@/...'
+│   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
+│   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
+├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
 ├── router.tsx
 └── main.tsx
@@ -55,13 +57,13 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".
 - **Errori API**: body `{ timestamp, status, error, message }` → mostrare `message` all'utente (già in italiano).
 - **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400).
-- **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`.
+- **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`, `buyerId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`. `groupId` è opzionale in creazione: senza gruppo la spesa è personale (tra amici) e si elenca nel dettaglio amico filtrando `/bills/getMyBills`. `buyerId` è opzionale ("Pagato da"): default l'utente autenticato in creazione, il buyer attuale in modifica.
 - **Paginazione**: `?page=0&size=20`, risposta `Page<T>` Spring (`content`, `totalElements`, `totalPages`, `number`, ...).
 - **Uscita da un gruppo**: i debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali (settlement con `groupId` null).
 - **Rimborsi**: passare il `groupId` del settlement; senza `groupId` si saldano solo i debiti personali.
 - **Mutazioni**: dopo ogni mutazione invalidare le query TanStack Query correlate (bilanci, settlement, liste).
 - **Date**: stringhe ISO dal backend (`YYYY-MM-DD` per LocalDate).
-- **Env**: base URL API in `VITE_API_BASE_URL` (vedi `.env.example`). Mai committare `.env`.
+- **Env**: base URL API in `VITE_API_BASE_URL` (vedi `.env.example`). In dev, se assente, il default è `http://<host-della-pagina>:8080` — così i test da smartphone in LAN funzionano senza configurazione. Mai committare `.env`.
 
 ## Stile
 

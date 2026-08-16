@@ -228,12 +228,12 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 
 | Metodo | Path | Input | Output | Note |
 |--------|------|-------|--------|------|
-| POST | `/bills/new?description=&amount=&notes=&groupId=` | query + body `{ "userId": importo, ... }` | `BillDTO` | Somma debiti **= amount esatto**; il buyer può essere tra i debitori; 400 dati non validi |
+| POST | `/bills/new?description=&amount=&notes=&groupId=&buyerId=` | query + body `{ "userId": importo, ... }` | `BillDTO` | Somma debiti **= amount esatto**; il buyer può essere tra i debitori; 400 dati non validi. **`groupId` opzionale**: senza gruppo la spesa è personale (tra amici) e i debitori devono essere amici del buyer. **`buyerId` opzionale** ("Pagato da"): default l'utente autenticato |
 | GET | `/bills/group/{groupId}?page=&size=` | paginata | `Page<BillDTO>` | Solo membri del gruppo |
 | GET | `/bills/getMyBills?page=&size=` | paginata | `Page<BillDTO>` | Spese in cui l'utente è coinvolto |
 | GET | `/bills/getWhereImBuyer?page=&size=` | paginata | `Page<BillDTO>` | Spese pagate dall'utente |
-| PUT | `/bills/{id}?description=&amount=&notes=` | query + body mappa debiti | `BillDTO` | Solo buyer o admin gruppo; stesse validazioni della creazione |
-| DELETE | `/bills/{id}` | path | `204` | Solo buyer o admin gruppo (401/404) |
+| PUT | `/bills/{id}?description=&amount=&notes=&buyerId=` | query + body mappa debiti | `BillDTO` | Qualsiasi membro attivo del gruppo (per le personali: chiunque sia coinvolto); stesse validazioni della creazione; `buyerId` opzionale per cambiare chi ha pagato |
+| DELETE | `/bills/{id}` | path | `204` | Qualsiasi membro attivo del gruppo (per le personali: chiunque sia coinvolto) (401/404) |
 
 > **Attenzione**: i dati della spesa viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`) mentre la ripartizione va nel **body JSON** come oggetto `{ "1": 50.00, "2": 50.00 }`. Lo stesso vale per `PUT /bills/{id}`.
 
@@ -252,11 +252,10 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | GET | `/balance/settlements` | `UserSettlementDTO[]` | "Chi deve a chi" globale, solo verso l'utente autenticato |
 | GET | `/balance/{userId}` | `UserBalanceDTO` | Solo se `userId` = utente autenticato (altrimenti 401) — preferire `/balance/me` |
 
-### 6.10 Endpoint — Transazioni e stato
+### 6.10 Endpoint — Stato
 
 | Metodo | Path | Note |
 |--------|------|------|
-| DELETE | `/transactions/{id}` | Solo buyer della spesa o admin del gruppo |
 | GET | `/status/isOn` | Pubblico, health check → `"ok"` |
 
 ## 7. Allineamenti backend necessari quando il FE andrà online

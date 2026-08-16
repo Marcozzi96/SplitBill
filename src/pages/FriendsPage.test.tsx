@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import FriendsPage from './FriendsPage'
 import { api } from '@/api/client'
 
@@ -41,7 +42,12 @@ function renderFriendsPage() {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      <FriendsPage />
+      <MemoryRouter initialEntries={['/friends']}>
+        <Routes>
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/friends/:userId" element={<p>Dettaglio amico</p>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -72,6 +78,45 @@ describe('FriendsPage', () => {
   it('mostra lo stato vuoto senza amici', async () => {
     renderFriendsPage()
     await screen.findByText('Nessun amico ancora: invia la prima richiesta.')
+  })
+
+  it('filtra gli amici con il box di ricerca', async () => {
+    mockLists({
+      friends: {
+        content: [
+          { userId: 1, username: 'mario', email: 'mario@example.com' },
+          { userId: 2, username: 'luigi', email: 'luigi@example.com' },
+        ],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderFriendsPage()
+
+    await screen.findByText('mario')
+    fireEvent.change(screen.getByLabelText('Cerca amici'), { target: { value: 'luigi' } })
+
+    expect(screen.queryByText('mario')).toBeNull()
+    expect(screen.getByText('luigi')).toBeTruthy()
+
+    fireEvent.change(screen.getByLabelText('Cerca amici'), { target: { value: 'nessuno' } })
+    await screen.findByText('Nessun amico corrisponde alla ricerca.')
+  })
+
+  it('cliccando sull’amico si apre il suo dettaglio', async () => {
+    mockLists({
+      friends: {
+        content: [{ userId: 2, username: 'luigi', email: 'luigi@example.com' }],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderFriendsPage()
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /luigi luigi@example\.com/ }),
+    )
+    await screen.findByText('Dettaglio amico')
   })
 
   it('accetta una richiesta ricevuta passando lo userId del richiedente', async () => {

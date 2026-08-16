@@ -10,6 +10,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import FriendsPage from './pages/FriendsPage'
 import GroupsPage from './pages/GroupsPage'
 import GroupDetailPage from './pages/GroupDetailPage'
+import FriendDetailPage from './pages/FriendDetailPage'
 import BalancesPage from './pages/BalancesPage'
 import ProfilePage from './pages/ProfilePage'
 
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/', element: <HomePage /> },
           { path: '/friends', element: <FriendsPage /> },
+          { path: '/friends/:userId', element: <FriendDetailPage /> },
           { path: '/groups', element: <GroupsPage /> },
           { path: '/groups/:groupId', element: <GroupDetailPage /> },
           { path: '/balances', element: <BalancesPage /> },

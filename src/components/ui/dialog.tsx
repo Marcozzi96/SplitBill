@@ -39,18 +39,31 @@ function DialogOverlay({
   )
 }
 
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}: DialogPrimitive.Popup.Props & {
-  showCloseButton?: boolean
-}) {
+const DialogContent = React.forwardRef<
+  HTMLDivElement,
+  DialogPrimitive.Popup.Props & { showCloseButton?: boolean }
+>(function DialogContent(
+  { className, children, showCloseButton = true, initialFocus, ...props },
+  forwardedRef
+) {
+  const innerRef = React.useRef<HTMLDivElement | null>(null)
+
+  function setRefs(element: HTMLDivElement | null) {
+    innerRef.current = element
+    if (typeof forwardedRef === "function") forwardedRef(element)
+    else if (forwardedRef) {
+      ;(forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = element
+    }
+  }
+
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
+        ref={setRefs}
+        // Di default il focus va sul contenitore del dialog e non sul primo
+        // campo: evita l'apertura della tastiera virtuale su smartphone.
+        initialFocus={initialFocus ?? (() => innerRef.current)}
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
@@ -78,7 +91,7 @@ function DialogContent({
       </DialogPrimitive.Popup>
     </DialogPortal>
   )
-}
+})
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
