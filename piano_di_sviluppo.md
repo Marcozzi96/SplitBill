@@ -5,7 +5,7 @@
 > Durata ipotizzata: 1 settimana per sprint (stima indicativa, da ricalibrare dopo lo Sprint 1).
 > Ultimo aggiornamento: 2026-08-16
 
-> **Stato avanzamento**: Sprint 1–5 completati (fondamenta, autenticazione, amici, gruppi, spese). Prossimo: Sprint 6 — Revisione flussi di creazione spesa (richiesta del 2026-08-16).
+> **Stato avanzamento**: Sprint 1–6 completati (fondamenta, autenticazione, amici, gruppi, spese, revisione flussi creazione spesa). Spesa personale senza `groupId` verificata E2E sul backend reale il 2026-08-18. Prossimo: Sprint 7 — Bilanci e rimborsi.
 
 ---
 
@@ -88,7 +88,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: creazione spesa con ripartizione libera e bilanciata; modifica/eliminazione; rifiuto 400 gestito con messaggio chiaro.
 
-## Sprint 6 — Revisione flussi di creazione spesa
+## Sprint 6 — Revisione flussi di creazione spesa ✅
 
 **Obiettivo**: le spese si creano solo nel contesto giusto (gruppo o amico); via il tab "Spese" dalla navigazione.
 
@@ -135,7 +135,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 | CORS non allineato in dev (test da smartphone in LAN) | Risolto: il FE usa di default l'host della pagina per le API e il backend accetta origini LAN private via `allowedOriginPatterns` |
 | Token invalidati a ogni restart del backend in dev (chiave JWT effimera) | Impostare `JWT_SECRET` fissa nel backend di dev |
 | Precisione importi (float JSON) | Validazione FE a 2 decimali + controllo somma quote prima dell'invio |
-| Spese personali senza gruppo: il contratto OpenAPI dichiara `groupId` obbligatorio in `POST /bills/new` | Verificare subito contro il backend reale (Sprint 6); se rifiuta, valutare una modifica backend (`groupId` opzionale) prima di implementare il flusso da amico |
+| ~~Spese personali senza gruppo~~ | **Risolto** (Sprint 6, verificato E2E il 2026-08-18): `groupId` è opzionale in `POST /bills/new`; la spesa personale tra amici funziona |
 | Link email che puntano al backend invece che al FE | Route FE `/auth/confirmEmail` e `/resetPassword` pronte dallo Sprint 2; `OPEN_LINK` allineato nel rilascio |
 
 ## Dipendenze tra sprint
