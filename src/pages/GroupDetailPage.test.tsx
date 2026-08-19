@@ -28,21 +28,29 @@ const members = [
   { userId: 2, username: 'luigi', email: 'luigi@example.com', role: 'MEMBER', dataIngresso: '2026-08-02' },
 ]
 
+const balance = { userId: 1, username: 'mario', totalPaid: 0, totalOwed: 0, netBalance: 0 }
+
 function mockApi({
   membersData = members,
   friends = { content: [], totalPages: 0, number: 0 },
   settlements = [],
   bills = { content: [], totalPages: 0, number: 0 },
+  balanceData = balance,
+  groupSettlements = [],
 }: {
   membersData?: object[]
   friends?: object
   settlements?: object[]
   bills?: object
+  balanceData?: object
+  groupSettlements?: object[]
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/groups/5') return Promise.resolve({ data: group })
     if (url === '/groups/5/members') return Promise.resolve({ data: membersData })
     if (url === '/groups/5/settlement-status') return Promise.resolve({ data: settlements })
+    if (url === '/groups/5/balance') return Promise.resolve({ data: balanceData })
+    if (url === '/groups/5/settlements') return Promise.resolve({ data: groupSettlements })
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/bills/group/5') return Promise.resolve({ data: bills })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
@@ -301,5 +309,38 @@ describe('GroupDetailPage', () => {
 
     await screen.findByText(/non pareggia l'importo/)
     expect(mockedPut).not.toHaveBeenCalled()
+  })
+
+  it('mostra saldo e settlement del gruppo e rimborsa passando il groupId', async () => {
+    mockApi({
+      balanceData: { userId: 1, username: 'mario', totalPaid: 10, totalOwed: 30, netBalance: -20 },
+      groupSettlements: [
+        {
+          counterparty: { userId: 2, username: 'luigi' },
+          amount: 20,
+          direction: 'DEBT',
+          groupId: 5,
+          groupName: 'Vacanze',
+        },
+      ],
+    })
+    mockedPost.mockResolvedValue({ data: { paymentId: 7 } })
+    renderDetail()
+
+    // Saldo nel gruppo nella card; i settlement sono nel modale "Dettagli".
+    await screen.findByText('Il tuo saldo nel gruppo')
+    expect(screen.getByText('-20,00 €')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Dettagli (1)' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Rimborsa' }))
+
+    // Importo pre-compilato al massimo del debito; groupId passato al backend.
+    expect(await screen.findByLabelText('Importo (€)')).toHaveProperty('value', '20,00')
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/payments', null, {
+        params: { payeeId: 2, amount: 20, groupId: 5 },
+      }),
+    )
   })
 })

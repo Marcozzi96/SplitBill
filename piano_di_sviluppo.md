@@ -5,7 +5,7 @@
 > Durata ipotizzata: 1 settimana per sprint (stima indicativa, da ricalibrare dopo lo Sprint 1).
 > Ultimo aggiornamento: 2026-08-16
 
-> **Stato avanzamento**: Sprint 1–6 completati (fondamenta, autenticazione, amici, gruppi, spese, revisione flussi creazione spesa). Spesa personale senza `groupId` verificata E2E sul backend reale il 2026-08-18. Prossimo: Sprint 7 — Bilanci e rimborsi.
+> **Stato avanzamento**: Sprint 1–7 completati (fondamenta, autenticazione, amici, gruppi, spese, revisione flussi creazione spesa, bilanci e rimborsi). Rimborsi (personali e di gruppo, con 409) verificati E2E sul backend reale il 2026-08-19. Prossimo: Sprint 8 — Profilo, PWA e rilascio.
 
 ---
 
@@ -102,7 +102,7 @@ PWA mobile-first (React 18 + Vite + TypeScript) installabile su Android e usabil
 
 **Done**: nuova spesa creabile solo da dettaglio gruppo o da card amico; checkbox partecipanti con default "tutti"; ricerca amici e dettaglio amico con spese senza gruppo; menu senza "Spese"; lint/test/build verdi.
 
-## Sprint 7 — Bilanci e rimborsi
+## Sprint 7 — Bilanci e rimborsi ✅
 
 **Obiettivo**: chiudere il ciclo dei soldi.
 

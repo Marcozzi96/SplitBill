@@ -1,6 +1,13 @@
 // Importi a 2 decimali: si lavora in centesimi (interi) per evitare
 // gli errori di arrotondamento dei float JSON.
 
+// Colore del saldo netto: positivo = ti devono soldi, negativo = devi soldi.
+export function netBalanceClass(net: number): string {
+  if (net > 0) return 'text-green-600'
+  if (net < 0) return 'text-destructive'
+  return 'text-muted-foreground'
+}
+
 export function formatEuro(amount?: number): string {
   return (amount ?? 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
 }

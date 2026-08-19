@@ -35,7 +35,7 @@ src/
 ├── api/            # client axios, tipi generati, hook TanStack Query
 │   ├── client.ts   # istanza axios + interceptor JWT/401
 │   ├── types.ts    # GENERATO da openapi-typescript — non editare a mano
-│   └── hooks/      # useLogin, useFriends, useGroups, useBills, ...
+│   └── hooks/      # useLogin, useFriends, useGroups, useBills, useMyBalance, usePayments, ...
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
@@ -43,6 +43,7 @@ src/
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
 │   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
+│   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Bilanci, dettaglio gruppo; importo pre-compilato al massimo del debito)
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
 ├── router.tsx

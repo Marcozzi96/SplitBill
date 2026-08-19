@@ -18,10 +18,13 @@ import { Input } from '@/components/ui/input'
 import FriendPicker from '@/components/FriendPicker'
 import BillCard from '@/components/BillCard'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
+import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
+import { netBalanceClass } from '@/lib/money'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
 import { useFriends } from '@/api/hooks/friends'
 import { useGroupBills } from '@/api/hooks/bills'
+import { useGroupBalance, useGroupSettlements } from '@/api/hooks/balance'
 import {
   getGroupSettlementStatus,
   useAddGroupMembers,
@@ -36,6 +39,7 @@ import type { components } from '@/api/types'
 type SettlementDTO = components['schemas']['SettlementDTO']
 type BillDTO = components['schemas']['BillDTO']
 type GroupMemberDTO = components['schemas']['GroupMemberDTO']
+type UserSettlementDTO = components['schemas']['UserSettlementDTO']
 
 function formatDate(iso?: string) {
   if (!iso) return ''
@@ -173,6 +177,8 @@ function GroupDetailBody({
         </CardContent>
       </Card>
 
+      <GroupBalanceSection groupId={groupId} />
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Spese</h2>
         <Button variant="outline" size="sm" onClick={() => setCreateBillOpen(true)}>
@@ -212,6 +218,91 @@ function GroupDetailBody({
       <DeleteGroupDialog groupId={groupId} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <LeaveGroupDialog groupId={groupId} open={leaveOpen} onOpenChange={setLeaveOpen} />
     </div>
+  )
+}
+
+// --- Sezione bilancio del gruppo: card con saldo + modale "chi deve a chi" ---
+
+function GroupBalanceSection({ groupId }: { groupId: number }) {
+  const balanceQuery = useGroupBalance(groupId)
+  const settlementsQuery = useGroupSettlements(groupId)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+
+  if (balanceQuery.isPending || settlementsQuery.isPending) {
+    return (
+      <div className="flex justify-center py-6">
+        <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+      </div>
+    )
+  }
+
+  if (balanceQuery.isError || settlementsQuery.isError) {
+    const error = balanceQuery.isError ? balanceQuery.error : settlementsQuery.error
+    return (
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <p className="text-muted-foreground">{getApiErrorMessage(error)}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            balanceQuery.refetch()
+            settlementsQuery.refetch()
+          }}
+        >
+          Riprova
+        </Button>
+      </div>
+    )
+  }
+
+  const net = balanceQuery.data?.netBalance ?? 0
+  const settlements = settlementsQuery.data ?? []
+
+  return (
+    <>
+      <h2 className="text-lg font-semibold">Bilancio</h2>
+      <Card>
+        <CardContent className="flex items-center justify-between gap-2 py-3">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-sm">Il tuo saldo nel gruppo</p>
+            <p className={`text-xl font-bold ${netBalanceClass(net)}`}>{formatEuro(net)}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
+            Dettagli ({settlements.length})
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bilancio del gruppo</DialogTitle>
+            <DialogDescription>Chi deve a chi in questo gruppo.</DialogDescription>
+          </DialogHeader>
+          <GroupSettlementsDialogBody settlements={settlements} />
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+// Corpo del modale bilancio: lista "chi deve a chi" con dialog di rimborso.
+function GroupSettlementsDialogBody({ settlements }: { settlements: UserSettlementDTO[] }) {
+  const [paying, setPaying] = useState<UserSettlementDTO | null>(null)
+
+  return (
+    <>
+      <SettlementList settlements={settlements} onPay={setPaying} />
+      {paying && (
+        <PaySettlementDialog
+          key={`${paying.counterparty?.userId}-${paying.groupId ?? 'personale'}`}
+          settlement={paying}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPaying(null)
+          }}
+        />
+      )}
+    </>
   )
 }
 
