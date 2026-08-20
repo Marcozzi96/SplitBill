@@ -11,8 +11,6 @@ import FriendsPage from './pages/FriendsPage'
 import GroupsPage from './pages/GroupsPage'
 import GroupDetailPage from './pages/GroupDetailPage'
 import FriendDetailPage from './pages/FriendDetailPage'
-import BalancesPage from './pages/BalancesPage'
-import PaymentsPage from './pages/PaymentsPage'
 import ProfilePage from './pages/ProfilePage'
 
 export const router = createBrowserRouter([
@@ -35,8 +33,6 @@ export const router = createBrowserRouter([
           { path: '/friends/:userId', element: <FriendDetailPage /> },
           { path: '/groups', element: <GroupsPage /> },
           { path: '/groups/:groupId', element: <GroupDetailPage /> },
-          { path: '/balances', element: <BalancesPage /> },
-          { path: '/payments', element: <PaymentsPage /> },
           { path: '/profile', element: <ProfilePage /> },
         ],
       },

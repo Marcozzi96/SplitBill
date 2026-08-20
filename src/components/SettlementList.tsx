@@ -25,7 +25,7 @@ function contextLabel(settlement: UserSettlementDTO): string {
 
 // "Chi deve a chi" dal punto di vista dell'utente: DEBT = devi soldi alla
 // controparte (con azione di rimborso), CREDIT = la controparte deve a te.
-// Condiviso tra BalancesPage (globale) e GroupDetailPage (nel gruppo).
+// Condiviso tra HomePage (globale) e GroupDetailPage (nel gruppo).
 export function SettlementList({
   settlements,
   onPay,

@@ -1,0 +1,32 @@
+# Deploy automatico del frontend sul VPS ad ogni push su main.
+# Richiede i secret del repository: VPS_HOST, VPS_USER, VPS_SSH_KEY (chiave privata).
+# Sul server i repo sono clonati in ~/splitbill/javaWS e ~/splitbill/SplitBill
+# (il docker-compose.yml vive nel repo backend, vedi DEPLOY.md di javaWS).
+name: Deploy frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/splitbill/SplitBill
+            git pull
+            cd ~/splitbill/javaWS
+            docker compose up -d --build frontend
+            docker image prune -f

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, LoaderCircle } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatEuro } from '@/lib/money'
@@ -18,8 +17,9 @@ function formatDate(iso?: string) {
 }
 
 // Cronologia dei rimborsi in cui l'utente è payer o payee.
-export default function PaymentsPage() {
-  const navigate = useNavigate()
+// Usata nella tab "Cronologia" della Home: loading/errore sono locali
+// alla lista e non bloccano il resto della pagina.
+export default function PaymentsList() {
   const { user } = useAuth()
   const [page, setPage] = useState(0)
   const paymentsQuery = usePayments(page)
@@ -47,19 +47,7 @@ export default function PaymentsPage() {
   const totalPages = paymentsQuery.data?.totalPages ?? 1
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Torna ai bilanci"
-          onClick={() => navigate('/balances')}
-        >
-          <ArrowLeft />
-        </Button>
-        <h1 className="text-2xl font-bold">Rimborsi</h1>
-      </div>
-
+    <div className="flex flex-col gap-4">
       {payments.length === 0 ? (
         <p className="text-muted-foreground py-12 text-center">Nessun rimborso ancora.</p>
       ) : (

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import HomePage from './HomePage'
@@ -17,8 +17,63 @@ vi.mock('@/api/client', () => ({
 }))
 
 const mockedGet = vi.mocked(api.get)
+const mockedPost = vi.mocked(api.post)
 
-const balance = { userId: 1, username: 'mario', totalPaid: 50, totalOwed: 60, netBalance: -10 }
+const balance = { userId: 1, username: 'mario', totalPaid: 50, totalOwed: 30, netBalance: 20 }
+
+const settlements = [
+  // Debito di gruppo verso luigi.
+  {
+    counterparty: { userId: 2, username: 'luigi', email: 'luigi@example.com' },
+    amount: 10,
+    direction: 'DEBT',
+    groupId: 5,
+    groupName: 'Vacanze',
+  },
+  // Debito personale verso anna.
+  {
+    counterparty: { userId: 3, username: 'anna', email: 'anna@example.com' },
+    amount: 4,
+    direction: 'DEBT',
+    groupId: null,
+    groupName: null,
+  },
+  // Credito: paolo deve a me — niente azione di rimborso.
+  {
+    counterparty: { userId: 4, username: 'paolo', email: 'paolo@example.com' },
+    amount: 7.5,
+    direction: 'CREDIT',
+    groupId: null,
+    groupName: null,
+  },
+]
+
+const payments = {
+  content: [
+    // Io payer: rimborso di gruppo a luigi.
+    {
+      paymentId: 1,
+      payer: { userId: 1, username: 'mario' },
+      payee: { userId: 2, username: 'luigi' },
+      groupId: 5,
+      amount: 10,
+      date: '2026-08-15',
+      notes: 'parziale',
+    },
+    // Io payee: rimborso personale da luigi.
+    {
+      paymentId: 2,
+      payer: { userId: 2, username: 'luigi' },
+      payee: { userId: 1, username: 'mario' },
+      groupId: null,
+      amount: 5,
+      date: '2026-08-16',
+      notes: '',
+    },
+  ],
+  totalPages: 1,
+  number: 0,
+}
 
 const authValue: AuthContextValue = {
   user: { userId: 1, username: 'mario', email: 'mario@example.com' },
@@ -39,18 +94,19 @@ const byText = (text: string) =>
 
 function mockApi({
   balanceData = balance,
-  settlements = [],
+  settlementsData = settlements,
   requestsCount = 0,
 }: {
   balanceData?: object
-  settlements?: object[]
+  settlementsData?: object[]
   requestsCount?: number
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/balance/me') return Promise.resolve({ data: balanceData })
-    if (url === '/balance/settlements') return Promise.resolve({ data: settlements })
+    if (url === '/balance/settlements') return Promise.resolve({ data: settlementsData })
     if (url === '/user/friendshipRequests/count')
       return Promise.resolve({ data: { count: requestsCount } })
+    if (url === '/payments') return Promise.resolve({ data: payments })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
@@ -74,38 +130,31 @@ beforeEach(() => {
 })
 
 describe('HomePage', () => {
-  it('mostra saluto, saldo globale e stato vuoto dei settlement', async () => {
+  it('mostra saluto, saldo globale e il "chi deve a chi" completo', async () => {
     renderPage()
 
     await screen.findByRole('heading', { name: 'Ciao, mario' })
     expect(screen.getByText('Il tuo saldo globale')).toBeTruthy()
-    expect(screen.getByText('-10,00 €')).toBeTruthy()
-    expect(screen.getByText('Nel complesso devi soldi')).toBeTruthy()
-    expect(screen.getByText('Nessun debito o credito aperto.')).toBeTruthy()
+    expect(screen.getByText('20,00 €')).toBeTruthy()
+    expect(screen.getByText('Nel complesso ti devono soldi')).toBeTruthy()
+    expect(byText('Pagato 50,00 € · Dovuto 30,00 €')).toBeTruthy()
+    // Tutti i settlement sono visibili (niente più limite "in evidenza").
+    expect(byText('Devi 10,00 € a luigi')).toBeTruthy()
+    expect(screen.getByText('gruppo: Vacanze')).toBeTruthy()
+    expect(byText('Devi 4,00 € a anna')).toBeTruthy()
+    expect(byText('paolo ti deve 7,50 €')).toBeTruthy()
+    expect(screen.getAllByText('personale')).toHaveLength(2)
+    // Rimborsa solo sui DEBT: luigi e anna, non paolo.
+    expect(screen.getAllByRole('button', { name: 'Rimborsa' })).toHaveLength(2)
     // Nessuna richiesta di amicizia: niente box dedicato.
     expect(screen.queryByText(/richieste? di amicizia/)).toBeNull()
   })
 
-  it('mostra in evidenza al massimo 3 settlement con link ai bilanci', async () => {
-    mockApi({
-      settlements: [
-        { counterparty: { userId: 2, username: 'u2' }, amount: 1, direction: 'DEBT', groupId: null, groupName: null },
-        { counterparty: { userId: 3, username: 'u3' }, amount: 2, direction: 'DEBT', groupId: 5, groupName: 'Vacanze' },
-        { counterparty: { userId: 4, username: 'u4' }, amount: 3, direction: 'CREDIT', groupId: null, groupName: null },
-        { counterparty: { userId: 5, username: 'u5' }, amount: 4, direction: 'DEBT', groupId: null, groupName: null },
-      ],
-    })
+  it('mostra lo stato vuoto senza debiti né crediti', async () => {
+    mockApi({ settlementsData: [] })
     renderPage()
 
-    await screen.findByText('u2')
-    expect(byText('Devi 1,00 € a u2')).toBeTruthy()
-    expect(byText('Devi 2,00 € a u3')).toBeTruthy()
-    expect(byText('u4 ti deve 3,00 €')).toBeTruthy()
-    // Il quarto settlement resta nella pagina Bilanci.
-    expect(screen.queryByText('u5')).toBeNull()
-    // Il link "Vedi tutti" porta ai bilanci (Base UI: <a> con role button).
-    const link = screen.getByText('Vedi tutti').closest('a')
-    expect(link?.getAttribute('href')).toBe('/balances')
+    await screen.findByText('Nessun debito o credito aperto.')
   })
 
   it('mostra il box delle richieste di amicizia in attesa', async () => {
@@ -115,5 +164,73 @@ describe('HomePage', () => {
     await screen.findByText(
       (_, el) => el?.tagName === 'P' && el.textContent === 'Hai 2 richieste di amicizia in attesa',
     )
+  })
+
+  it('non carica la cronologia finché non si apre la tab', async () => {
+    renderPage()
+
+    await screen.findByRole('heading', { name: 'Ciao, mario' })
+    expect(mockedGet).not.toHaveBeenCalledWith('/payments', expect.anything())
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Cronologia' }))
+
+    expect(
+      await screen.findByText(
+        (_, el) =>
+          el?.tagName === 'P' &&
+          el.textContent?.replace(/\s+/g, ' ').trim() === 'Hai rimborsato 10,00 € a luigi',
+      ),
+    ).toBeTruthy()
+    expect(byText('luigi ti ha rimborsato 5,00 €')).toBeTruthy()
+    expect(byText('15 ago 2026 · di gruppo · parziale')).toBeTruthy()
+    expect(byText('16 ago 2026 · personale')).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/payments', { params: { page: 0, size: 20 } })
+  })
+
+  it('rimborsa un debito di gruppo passando il groupId', async () => {
+    mockedPost.mockResolvedValue({ data: { paymentId: 1 } })
+    renderPage()
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Rimborsa' }))[0])
+
+    // Importo pre-compilato al massimo del debito.
+    expect(await screen.findByLabelText('Importo (€)')).toHaveProperty('value', '10,00')
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'parziale' } })
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/payments', null, {
+        params: { payeeId: 2, amount: 10, groupId: 5, notes: 'parziale' },
+      }),
+    )
+  })
+
+  it('rimborsa un debito personale senza groupId', async () => {
+    mockedPost.mockResolvedValue({ data: { paymentId: 2 } })
+    renderPage()
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Rimborsa' }))[1])
+    await screen.findByLabelText('Importo (€)')
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/payments', null, {
+        params: { payeeId: 3, amount: 4 },
+      }),
+    )
+  })
+
+  it('al 409 mostra il messaggio del backend nel dialog', async () => {
+    mockedPost.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { message: 'Importo superiore al debito effettivo' } },
+    })
+    renderPage()
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Rimborsa' }))[0])
+    await screen.findByLabelText('Importo (€)')
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await screen.findByText('Importo superiore al debito effettivo')
   })
 })

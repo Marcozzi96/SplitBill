@@ -153,9 +153,15 @@ function FriendsTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Rimuovi amico</DialogTitle>
-              <DialogDescription>
-                Vuoi rimuovere {toRemove?.username} dagli amici? Potrai sempre inviare una nuova
-                richiesta in seguito.
+              <DialogDescription
+                render={<div className="flex flex-col gap-2" />}
+              >
+                <p>Rimuovere {toRemove?.username} dagli amici?</p>
+                <p>
+                  I conti in sospeso non andranno persi: i debiti e i crediti restano nella tua
+                  Home per essere saldati. Tuttavia, non potrete più inserire nuove spese insieme.
+                </p>
+                <p>Puoi sempre inviare nuovamente la richiesta di amicizia in seguito.</p>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

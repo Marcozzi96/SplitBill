@@ -39,17 +39,25 @@ src/
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
-│   └── AppLayout.tsx  # layout con bottom navigation mobile
+│   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" globale per nuova spesa
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
 │   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
-│   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Bilanci, dettaglio gruppo; importo pre-compilato al massimo del debito)
+│   # GlobalCreateBillDialog.tsx: creazione spesa dal FAB con scelta del contesto (gruppo o personale)
+│   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Home, dettaglio gruppo; importo pre-compilato al massimo del debito)
+│   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
-├── pages/          # una pagina per schermata (vedi progettazione-fe.md §4)
+├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; vedi progettazione-fe.md §4)
 ├── router.tsx
 └── main.tsx
 e2e/                # test E2E Playwright (esclusi da Vitest)
 ```
+
+## Deploy
+
+- `Dockerfile` multi-stage (build Vite → nginx) + `nginx.conf` (SPA fallback): l'immagine è buildata dal `docker-compose.yml` del repo **javaWS**, che sul server è clonato affiancato a questo repo (`~/splitbill/javaWS` e `~/splitbill/SplitBill`). Guida completa: `DEPLOY.md` in javaWS.
+- `.github/workflows/deploy.yml`: deploy automatico a ogni push su `main` via SSH (secret `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`).
+- `VITE_API_BASE_URL` in produzione è passata come **build arg** Docker dal compose (il valore è fissato nel bundle a build time, non letto a runtime).
 
 ## Convenzioni vincolanti
 

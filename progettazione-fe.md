@@ -269,13 +269,11 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Schermata | Endpoint principali |
 |-----------|---------------------|
 | Login / Register / Forgot / Reset / Confirm | `/auth/*` |
-| Home / Dashboard | `/balance/me`, `/balance/settlements`, `/user/friendshipRequests/count` |
+| Home (bilanci + cronologia rimborsi in tab) | `/balance/me`, `/balance/settlements`, `POST /payments`, `GET /payments`, `/user/friendshipRequests/count` |
 | Amici | `/user/getFriends`, `/user/getFriendshipReq*`, send/accept/refuse/cancel |
 | Lista gruppi | `/groups`, `/groups/create` |
 | Dettaglio gruppo | `/groups/{id}`, `/groups/{id}/members`, `/bills/group/{id}`, `/groups/{id}/balance`, `/groups/{id}/settlements` |
-| Nuova spesa | `/groups/{id}/members` + `POST /bills/new` |
-| Bilanci | `/balance/me`, `/balance/settlements`, `POST /payments` |
-| Cronologia rimborsi | `GET /payments` |
+| Nuova spesa (dettaglio o FAB globale) | `/groups/{id}/members` + `POST /bills/new` |
 | Profilo | `/user/me`, `/user/update`, `/user/delete` |
 
 ## 9. Comandi di riferimento backend
