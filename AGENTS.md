@@ -64,6 +64,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 
 ## Convenzioni vincolanti
 
+- **Temi**: chiaro/scuro via CSS variable in `src/index.css` (classe `.dark` su `<html>`, gestita da `next-themes` con default `system`; selettore nella pagina Impostazioni). Mai colori hardcoded nei componenti: usare i token semantici (`bg-card`, `text-muted-foreground`, `text-success`/`text-destructive` per i saldi, ...).
 - **JWT**: token in `localStorage` (chiave in `src/api/client.ts`), header `Authorization: Bearer <token>` su tutte le chiamate tranne `/auth/**`. Mai cookie.
 - **401**: gestito dall'interceptor in `src/api/client.ts` (svuota token, redirect a `/login`). Non duplicare la logica.
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".

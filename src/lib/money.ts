@@ -3,7 +3,7 @@
 
 // Colore del saldo netto: positivo = ti devono soldi, negativo = devi soldi.
 export function netBalanceClass(net: number): string {
-  if (net > 0) return 'text-green-600'
+  if (net > 0) return 'text-success'
   if (net < 0) return 'text-destructive'
   return 'text-muted-foreground'
 }

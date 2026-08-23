@@ -16,8 +16,8 @@ export default defineConfig({
         short_name: 'SplitBill',
         description: 'Dividi le spese con amici e gruppi',
         start_url: '/',
-        theme_color: '#0f172a',
-        background_color: '#ffffff',
+        theme_color: '#0a1020',
+        background_color: '#0a1020',
         display: 'standalone',
         icons: [
           { src: 'icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },

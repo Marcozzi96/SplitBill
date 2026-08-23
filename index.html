@@ -3,8 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#eef2f8" />
     <title>SplitBill</title>
+    <script>
+      // Applica il tema salvato prima del primo paint (evita il flash chiaro/scuro).
+      ;(function () {
+        try {
+          var t = localStorage.getItem('theme') || 'system'
+          var dark =
+            t === 'dark' ||
+            (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) document.documentElement.classList.add('dark')
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', dark ? '#0a1020' : '#eef2f8')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

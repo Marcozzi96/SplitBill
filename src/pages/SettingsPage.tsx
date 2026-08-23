@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, Monitor, Moon, Sun } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/auth/auth-context'
 import { useUpdateUser } from '@/api/hooks/auth'
 import { getApiErrorMessage } from '@/api/errors'
+import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const { user, logout } = useAuth()
@@ -28,6 +30,7 @@ export default function SettingsPage() {
           <CardDescription>{user?.email}</CardDescription>
         </CardHeader>
       </Card>
+      <ThemeCard />
       <UsernameCard />
       <PasswordCard />
       <Card>
@@ -39,6 +42,44 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Selettore tema: chiaro/scuro/sistema (persistito da next-themes in localStorage).
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Chiaro', icon: Sun },
+  { value: 'dark', label: 'Scuro', icon: Moon },
+  { value: 'system', label: 'Sistema', icon: Monitor },
+] as const
+
+function ThemeCard() {
+  const { theme, setTheme } = useTheme()
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Tema</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="bg-muted grid grid-cols-3 rounded-lg p-1">
+          {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={theme === value}
+              onClick={() => setTheme(value)}
+              className={cn(
+                'text-muted-foreground flex h-10 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors',
+                theme === value && 'bg-background text-foreground shadow-sm',
+              )}
+            >
+              <Icon className="size-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
