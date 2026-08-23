@@ -22,6 +22,7 @@ import {
   useFriends,
   useFriendshipReqReceived,
   useFriendshipReqSent,
+  useFriendshipRequestsCount,
   useRefuseFriendship,
 } from '@/api/hooks/friends'
 import type { components } from '@/api/types'
@@ -52,6 +53,8 @@ const STATO_LABEL: Record<string, string> = {
 export default function FriendsPage() {
   const [tab, setTab] = useState<FriendsTab>('friends')
   const [dialogOpen, setDialogOpen] = useState(false)
+  // Stessa query del badge sulla bottom navigation: conteggio richieste in attesa.
+  const { data: requestsCount = 0 } = useFriendshipRequestsCount()
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
@@ -70,11 +73,16 @@ export default function FriendsPage() {
             type="button"
             onClick={() => setTab(id)}
             className={cn(
-              'text-muted-foreground h-10 rounded-md text-sm font-medium transition-colors',
+              'text-muted-foreground flex h-10 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors',
               tab === id && 'bg-background text-foreground shadow-sm',
             )}
           >
             {label}
+            {id === 'received' && requestsCount > 0 && (
+              <span className="bg-destructive text-destructive-foreground flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
+                {requestsCount > 9 ? '9+' : requestsCount}
+              </span>
+            )}
           </button>
         ))}
       </div>

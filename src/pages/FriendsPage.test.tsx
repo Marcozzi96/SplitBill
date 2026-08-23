@@ -25,15 +25,19 @@ function mockLists({
   friends = emptyPage,
   received = emptyPage,
   sent = emptyPage,
+  requestsCount = 0,
 }: {
   friends?: object
   received?: object
   sent?: object
+  requestsCount?: number
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/user/getFriendshipReqReceived') return Promise.resolve({ data: received })
     if (url === '/user/getFriendshipReqSent') return Promise.resolve({ data: sent })
+    if (url === '/user/friendshipRequests/count')
+      return Promise.resolve({ data: { count: requestsCount } })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
@@ -117,6 +121,21 @@ describe('FriendsPage', () => {
       await screen.findByRole('button', { name: /luigi luigi@example\.com/ }),
     )
     await screen.findByText('Dettaglio amico')
+  })
+
+  it('mostra sul tab Ricevute il badge con il numero di richieste in attesa', async () => {
+    mockLists({ requestsCount: 3 })
+    renderFriendsPage()
+
+    const tabRicevute = await screen.findByRole('button', { name: 'Ricevute 3' })
+    expect(tabRicevute.textContent).toContain('3')
+  })
+
+  it('senza richieste in attesa il badge sul tab Ricevute non compare', async () => {
+    renderFriendsPage()
+
+    const tabRicevute = await screen.findByRole('button', { name: 'Ricevute' })
+    expect(tabRicevute.textContent).toBe('Ricevute')
   })
 
   it('accetta una richiesta ricevuta passando lo userId del richiedente', async () => {
