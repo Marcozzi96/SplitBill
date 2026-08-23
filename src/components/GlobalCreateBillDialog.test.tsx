@@ -53,12 +53,12 @@ function mockApi() {
   })
 }
 
-function renderDialog() {
+function renderDialog(props?: { defaultContext?: string; defaultFriendIds?: number[] }) {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={authValue}>
-        <GlobalCreateBillDialog open onOpenChange={() => {}} />
+        <GlobalCreateBillDialog open onOpenChange={() => {}} {...props} />
       </AuthContext.Provider>
     </QueryClientProvider>,
   )
@@ -130,5 +130,25 @@ describe('GlobalCreateBillDialog', () => {
         { params: { description: 'Cena', amount: 100, notes: '', groupId: 5, buyerId: 1 } },
       ),
     )
+  })
+
+  // FAB contestuale dal dettaglio amico: personale con l'amico già selezionato.
+  it('con defaultFriendIds preseleziona gli amici e mostra subito il form', async () => {
+    renderDialog({ defaultFriendIds: [2] })
+
+    expect(await screen.findByLabelText('Descrizione')).toBeTruthy()
+    expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', true)
+    expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
+    expect(screen.queryByText('Seleziona almeno un amico per continuare.')).toBeNull()
+  })
+
+  // FAB contestuale dal dettaglio gruppo: contesto gruppo già impostato.
+  it('con defaultContext preseleziona il gruppo e carica i suoi membri', async () => {
+    renderDialog({ defaultContext: '5' })
+
+    expect(await screen.findByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
+    expect(mockedGet).toHaveBeenCalledWith('/groups/5/members')
+    await screen.findByRole('option', { name: 'Gruppo: Vacanze' })
+    expect(screen.getByLabelText('Contesto')).toHaveProperty('value', '5')
   })
 })

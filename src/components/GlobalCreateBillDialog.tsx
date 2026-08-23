@@ -26,19 +26,27 @@ const PERSONAL = 'personale'
 // Creazione spesa globale (dal FAB): a differenza di CreateBillDialog il
 // contesto non è dato dalla pagina ma si sceglie qui — un gruppo oppure
 // "personale" (tra amici, con selezione dei partecipanti via FriendPicker).
+// Dal FAB contestuale (dettaglio amico/gruppo) il contesto e gli amici
+// partono preselezionati tramite le prop di default.
 export default function GlobalCreateBillDialog({
   open,
   onOpenChange,
+  defaultContext,
+  defaultFriendIds,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Contesto preselezionato: assente/PERSONAL oppure id del gruppo. */
+  defaultContext?: string
+  /** Amici preselezionati nel contesto personale (es. dettaglio amico). */
+  defaultFriendIds?: number[]
 }) {
   const { user } = useAuth()
   const createMutation = useCreateBill()
   const groupsQuery = useGroups(0)
   const friendsQuery = useFriends(0)
-  const [context, setContext] = useState(PERSONAL)
-  const [friendIds, setFriendIds] = useState<number[]>([])
+  const [context, setContext] = useState(defaultContext ?? PERSONAL)
+  const [friendIds, setFriendIds] = useState<number[]>(defaultFriendIds ?? [])
   const [error, setError] = useState<string | null>(null)
 
   const groupId = context === PERSONAL ? null : Number(context)
@@ -133,6 +141,12 @@ export default function GlobalCreateBillDialog({
             <p className="text-muted-foreground py-4 text-center text-sm">
               Seleziona almeno un amico per continuare.
             </p>
+          ) : friendsQuery.isPending ? (
+            // Amici preselezionati (FAB dal dettaglio amico): attendo la lista
+            // per avere gli username e la preselezione corretta dei partecipanti.
+            <div className="flex justify-center py-6">
+              <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+            </div>
           ) : (
             // La key cambia con i partecipanti: quote e selezioni ripartono da zero.
             <BillForm

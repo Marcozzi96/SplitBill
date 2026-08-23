@@ -39,11 +39,14 @@ src/
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
-│   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" globale per nuova spesa
+│   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" contestuale (vedi sotto)
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
 │   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
-│   # GlobalCreateBillDialog.tsx: creazione spesa dal FAB con scelta del contesto (gruppo o personale)
+│   # GlobalCreateBillDialog.tsx: creazione spesa dal FAB con scelta del contesto (gruppo o personale);
+│   #   accetta defaultContext/defaultFriendIds per preselezionare il contesto della pagina corrente
+│   # SendFriendRequestDialog.tsx: nuova richiesta di amicizia (pagina Amici e FAB su /friends)
+│   # CreateGroupDialog.tsx: creazione gruppo (pagina Gruppi e FAB su /groups)
 │   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Home, dettaglio gruppo; importo pre-compilato al massimo del debito)
 │   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
@@ -66,6 +69,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".
 - **Errori API**: body `{ timestamp, status, error, message }` → mostrare `message` all'utente (già in italiano).
 - **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400).
+- **FAB "+"**: contestuale alla rotta (in `AppLayout.tsx`) — Home/Profilo: nuova spesa con scelta del contesto; `/friends`: nuova richiesta di amicizia; `/friends/:userId`: nuova spesa personale con quell'amico preselezionato; `/groups`: nuovo gruppo; `/groups/:groupId`: nuova spesa con quel gruppo preselezionato.
 - **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`, `buyerId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`. `groupId` è opzionale in creazione: senza gruppo la spesa è personale (tra amici) e si elenca nel dettaglio amico filtrando `/bills/getMyBills`. `buyerId` è opzionale ("Pagato da"): default l'utente autenticato in creazione, il buyer attuale in modifica.
 - **Paginazione**: `?page=0&size=20`, risposta `Page<T>` Spring (`content`, `totalElements`, `totalPages`, `number`, ...).
 - **Uscita da un gruppo**: i debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali (settlement con `groupId` null).
