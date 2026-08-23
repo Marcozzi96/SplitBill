@@ -65,8 +65,11 @@ const DialogContent = React.forwardRef<
         // campo: evita l'apertura della tastiera virtuale su smartphone.
         initialFocus={initialFocus ?? (() => innerRef.current)}
         data-slot="dialog-content"
+        // Layout a tre fasce: header e footer fissi (flex-none), solo DialogBody
+        // scrolla. Il Popup non scrolla: max-h + overflow-hidden, padding spostato
+        // sulle singole fasce.
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -78,14 +81,14 @@ const DialogContent = React.forwardRef<
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="bg-destructive text-white hover:bg-destructive/90 absolute top-2 right-2 z-20"
                 size="icon-sm"
               />
             }
           >
             <XIcon
             />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Chiudi</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>
@@ -97,7 +100,18 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn("flex flex-none flex-col gap-2 p-4 pr-10 pb-2", className)}
+      {...props}
+    />
+  )
+}
+
+// Unica fascia scrollabile del modale: racchiude il contenuto tra header e footer.
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-2", className)}
       {...props}
     />
   )
@@ -115,7 +129,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "flex flex-none flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -161,6 +175,7 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,

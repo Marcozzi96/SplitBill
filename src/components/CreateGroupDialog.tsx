@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -66,42 +67,49 @@ export default function CreateGroupDialog({
             Dai un nome al gruppo e aggiungi gli amici che ne faranno parte.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="groupName">Nome</FieldLabel>
-              <Input
-                id="groupName"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="groupDescription">Descrizione</FieldLabel>
-              <Input
-                id="groupDescription"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Membri</FieldLabel>
-              <FriendPicker
-                friends={friendsQuery.data?.content ?? []}
-                selectedIds={selectedIds}
-                onToggle={toggle}
-                emptyText="Nessun amico da aggiungere: invia prima una richiesta di amicizia."
-              />
-            </Field>
-            {error && <FieldError>{error}</FieldError>}
-            <DialogFooter>
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Creazione in corso…' : 'Crea gruppo'}
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+        <DialogBody>
+          <form id="createGroupForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="groupName">Nome</FieldLabel>
+                <Input
+                  id="groupName"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="groupDescription">Descrizione</FieldLabel>
+                <Input
+                  id="groupDescription"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Membri</FieldLabel>
+                <FriendPicker
+                  friends={friendsQuery.data?.content ?? []}
+                  selectedIds={selectedIds}
+                  onToggle={toggle}
+                  emptyText="Nessun amico da aggiungere: invia prima una richiesta di amicizia."
+                />
+              </Field>
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="createGroupForm"
+            className="w-full"
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending ? 'Creazione in corso…' : 'Crea gruppo'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

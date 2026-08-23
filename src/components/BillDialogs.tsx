@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -63,20 +64,22 @@ export function CreateBillDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Nuova spesa</DialogTitle>
           <DialogDescription>
             Inserisci descrizione, importo, chi ha pagato e la ripartizione.
           </DialogDescription>
         </DialogHeader>
-        <BillForm
-          members={members}
-          submitLabel="Crea spesa"
-          isPending={createMutation.isPending}
-          error={error}
-          onSubmit={handleSubmit}
-        />
+        <DialogBody>
+          <BillForm
+            members={members}
+            submitLabel="Crea spesa"
+            isPending={createMutation.isPending}
+            error={error}
+            onSubmit={handleSubmit}
+          />
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -122,21 +125,23 @@ export function EditBillDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Modifica spesa</DialogTitle>
           <DialogDescription>
             Aggiorna descrizione, importo, note e ripartizione della spesa.
           </DialogDescription>
         </DialogHeader>
-        <BillForm
-          members={members}
-          bill={bill}
-          submitLabel="Salva"
-          isPending={updateMutation.isPending}
-          error={error}
-          onSubmit={handleSubmit}
-        />
+        <DialogBody>
+          <BillForm
+            members={members}
+            bill={bill}
+            submitLabel="Salva"
+            isPending={updateMutation.isPending}
+            error={error}
+            onSubmit={handleSubmit}
+          />
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -175,7 +180,7 @@ export function DeleteBillDialog({
             Eliminare &quot;{bill.description}&quot;? L&apos;operazione è definitiva.
           </DialogDescription>
         </DialogHeader>
-        {error && <FieldError>{error}</FieldError>}
+        <DialogBody>{error && <FieldError>{error}</FieldError>}</DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annulla

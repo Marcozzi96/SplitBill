@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -53,35 +54,42 @@ export default function SendFriendRequestDialog({
           <DialogTitle>Nuova richiesta di amicizia</DialogTitle>
           <DialogDescription>Inserisci username o email della persona da aggiungere.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="friendName">Username o email</FieldLabel>
-              <Input
-                id="friendName"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="friendMessage">Messaggio</FieldLabel>
-              <Input
-                id="friendMessage"
-                required
-                placeholder="Ciao, sono io!"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </Field>
-            {error && <FieldError>{error}</FieldError>}
-            <DialogFooter>
-              <Button type="submit" className="w-full" disabled={sendMutation.isPending}>
-                {sendMutation.isPending ? 'Invio in corso…' : 'Invia richiesta'}
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+        <DialogBody>
+          <form id="friendRequestForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="friendName">Username o email</FieldLabel>
+                <Input
+                  id="friendName"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="friendMessage">Messaggio</FieldLabel>
+                <Input
+                  id="friendMessage"
+                  required
+                  placeholder="Ciao, sono io!"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+              </Field>
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="friendRequestForm"
+            className="w-full"
+            disabled={sendMutation.isPending}
+          >
+            {sendMutation.isPending ? 'Invio in corso…' : 'Invia richiesta'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

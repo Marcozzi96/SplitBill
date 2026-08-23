@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -125,30 +126,37 @@ export function PaySettlementDialog({
             Debito {contextLabel(settlement)}: massimo {formatEuro(settlement.amount)}.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="payAmount">Importo (€)</FieldLabel>
-              <Input
-                id="payAmount"
-                required
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="payNotes">Note</FieldLabel>
-              <Input id="payNotes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </Field>
-            {error && <FieldError>{error}</FieldError>}
-            <DialogFooter>
-              <Button type="submit" className="w-full" disabled={payMutation.isPending}>
-                {payMutation.isPending ? 'Invio in corso…' : 'Registra rimborso'}
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+        <DialogBody>
+          <form id="paySettlementForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="payAmount">Importo (€)</FieldLabel>
+                <Input
+                  id="payAmount"
+                  required
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="payNotes">Note</FieldLabel>
+                <Input id="payNotes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </Field>
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="paySettlementForm"
+            className="w-full"
+            disabled={payMutation.isPending}
+          >
+            {payMutation.isPending ? 'Invio in corso…' : 'Registra rimborso'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -239,7 +240,7 @@ function GroupBalanceSection({ groupId }: { groupId: number }) {
   if (balanceQuery.isError || settlementsQuery.isError) {
     const error = balanceQuery.isError ? balanceQuery.error : settlementsQuery.error
     return (
-      <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
         <p className="text-muted-foreground">{getApiErrorMessage(error)}</p>
         <Button
           variant="outline"
@@ -273,12 +274,14 @@ function GroupBalanceSection({ groupId }: { groupId: number }) {
       </Card>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Bilancio del gruppo</DialogTitle>
             <DialogDescription>Chi deve a chi in questo gruppo.</DialogDescription>
           </DialogHeader>
-          <GroupSettlementsDialogBody settlements={settlements} />
+          <DialogBody>
+            <GroupSettlementsDialogBody settlements={settlements} />
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>
@@ -328,25 +331,27 @@ function MembersDialog({
           <DialogTitle>Membri ({members.length})</DialogTitle>
           <DialogDescription>Partecipanti del gruppo.</DialogDescription>
         </DialogHeader>
-        <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
-          {members.map((member) => (
-            <li key={member.userId} className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{member.username}</p>
-                <p className="text-muted-foreground truncate text-sm">{member.email}</p>
-              </div>
-              <span
-                className={
-                  member.role === 'ADMIN'
-                    ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
-                    : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
-                }
-              >
-                {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <DialogBody>
+          <ul className="flex flex-col gap-2">
+            {members.map((member) => (
+              <li key={member.userId} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{member.username}</p>
+                  <p className="text-muted-foreground truncate text-sm">{member.email}</p>
+                </div>
+                <span
+                  className={
+                    member.role === 'ADMIN'
+                      ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
+                      : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
+                  }
+                >
+                  {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </DialogBody>
         {isAdmin && (
           <DialogFooter>
             <Button variant="outline" className="w-full" onClick={onAddClick}>
@@ -384,7 +389,7 @@ function GroupBills({
 
   if (billsQuery.isError) {
     return (
-      <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
         <p className="text-muted-foreground">{getApiErrorMessage(billsQuery.error)}</p>
         <Button variant="outline" onClick={() => billsQuery.refetch()}>
           Riprova
@@ -522,33 +527,40 @@ function EditGroupDialog({
           <DialogTitle>Modifica gruppo</DialogTitle>
           <DialogDescription>Aggiorna nome e descrizione del gruppo.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="editGroupName">Nome</FieldLabel>
-              <Input
-                id="editGroupName"
-                required
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="editGroupDescription">Descrizione</FieldLabel>
-              <Input
-                id="editGroupDescription"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-              />
-            </Field>
-            {error && <FieldError>{error}</FieldError>}
-            <DialogFooter>
-              <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Salvataggio in corso…' : 'Salva'}
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+        <DialogBody>
+          <form id="editGroupForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="editGroupName">Nome</FieldLabel>
+                <Input
+                  id="editGroupName"
+                  required
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="editGroupDescription">Descrizione</FieldLabel>
+                <Input
+                  id="editGroupDescription"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                />
+              </Field>
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="editGroupForm"
+            className="w-full"
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? 'Salvataggio in corso…' : 'Salva'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -601,26 +613,29 @@ function AddMembersDialog({
           <DialogTitle>Aggiungi membri</DialogTitle>
           <DialogDescription>Seleziona gli amici da aggiungere al gruppo.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <FriendPicker
-              friends={candidates}
-              selectedIds={selectedIds}
-              onToggle={toggle}
-              emptyText="Tutti i tuoi amici sono già nel gruppo."
-            />
-            {error && <FieldError>{error}</FieldError>}
-            <DialogFooter>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={selectedIds.length === 0 || addMutation.isPending}
-              >
-                {addMutation.isPending ? 'Aggiunta in corso…' : 'Aggiungi al gruppo'}
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+        <DialogBody>
+          <form id="addMembersForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <FriendPicker
+                friends={candidates}
+                selectedIds={selectedIds}
+                onToggle={toggle}
+                emptyText="Tutti i tuoi amici sono già nel gruppo."
+              />
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="addMembersForm"
+            className="w-full"
+            disabled={selectedIds.length === 0 || addMutation.isPending}
+          >
+            {addMutation.isPending ? 'Aggiunta in corso…' : 'Aggiungi al gruppo'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -691,22 +706,24 @@ function DeleteGroupDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {debts !== null && (
-          <ul className="flex max-h-60 flex-col gap-2 overflow-y-auto">
-            {debts.length === 0 && (
-              <li className="text-muted-foreground text-sm">Nessun dettaglio disponibile.</li>
-            )}
-            {debts.map((debt, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-medium">{debt.debtor?.username}</span> deve{' '}
-                <span className="font-medium">{formatEuro(debt.amount)}</span> a{' '}
-                <span className="font-medium">{debt.creditor?.username}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <DialogBody>
+          {debts !== null && (
+            <ul className="flex flex-col gap-2">
+              {debts.length === 0 && (
+                <li className="text-muted-foreground text-sm">Nessun dettaglio disponibile.</li>
+              )}
+              {debts.map((debt, i) => (
+                <li key={i} className="text-sm">
+                  <span className="font-medium">{debt.debtor?.username}</span> deve{' '}
+                  <span className="font-medium">{formatEuro(debt.amount)}</span> a{' '}
+                  <span className="font-medium">{debt.creditor?.username}</span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {error && <FieldError>{error}</FieldError>}
+          {error && <FieldError>{error}</FieldError>}
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={close}>
@@ -771,7 +788,7 @@ function LeaveGroupDialog({
             personali: li troverai nei Bilanci.
           </DialogDescription>
         </DialogHeader>
-        {error && <FieldError>{error}</FieldError>}
+        <DialogBody>{error && <FieldError>{error}</FieldError>}</DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annulla

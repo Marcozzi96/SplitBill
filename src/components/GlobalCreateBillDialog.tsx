@@ -4,6 +4,7 @@ import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -93,7 +94,7 @@ export default function GlobalCreateBillDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Nuova spesa</DialogTitle>
           <DialogDescription>
@@ -101,72 +102,73 @@ export default function GlobalCreateBillDialog({
             ripartizione.
           </DialogDescription>
         </DialogHeader>
-
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="billContext">Contesto</FieldLabel>
-            <select
-              id="billContext"
-              className="border-input h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-base md:text-sm"
-              value={context}
-              onChange={(e) => {
-                setContext(e.target.value)
-                setError(null)
-              }}
-            >
-              <option value={PERSONAL}>Personale (tra amici)</option>
-              {groups.map((g) => (
-                <option key={g.groupId} value={g.groupId}>
-                  Gruppo: {g.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          {groupId == null && (
+        <DialogBody>
+          <FieldGroup>
             <Field>
-              <FieldLabel>Con chi</FieldLabel>
-              <FriendPicker
-                friends={friends}
-                selectedIds={friendIds}
-                onToggle={toggleFriend}
-                emptyText="Nessun amico: aggiungine uno dalla pagina Amici."
-              />
+              <FieldLabel htmlFor="billContext">Contesto</FieldLabel>
+              <select
+                id="billContext"
+                className="border-input h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-base md:text-sm"
+                value={context}
+                onChange={(e) => {
+                  setContext(e.target.value)
+                  setError(null)
+                }}
+              >
+                <option value={PERSONAL}>Personale (tra amici)</option>
+                {groups.map((g) => (
+                  <option key={g.groupId} value={g.groupId}>
+                    Gruppo: {g.name}
+                  </option>
+                ))}
+              </select>
             </Field>
-          )}
-        </FieldGroup>
 
-        {groupId == null ? (
-          friendIds.length === 0 ? (
-            <p className="text-muted-foreground py-4 text-center text-sm">
-              Seleziona almeno un amico per continuare.
-            </p>
-          ) : friendsQuery.isPending ? (
-            // Amici preselezionati (FAB dal dettaglio amico): attendo la lista
-            // per avere gli username e la preselezione corretta dei partecipanti.
-            <div className="flex justify-center py-6">
-              <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
-            </div>
+            {groupId == null && (
+              <Field>
+                <FieldLabel>Con chi</FieldLabel>
+                <FriendPicker
+                  friends={friends}
+                  selectedIds={friendIds}
+                  onToggle={toggleFriend}
+                  emptyText="Nessun amico: aggiungine uno dalla pagina Amici."
+                />
+              </Field>
+            )}
+          </FieldGroup>
+
+          {groupId == null ? (
+            friendIds.length === 0 ? (
+              <p className="text-muted-foreground py-4 text-center text-sm">
+                Seleziona almeno un amico per continuare.
+              </p>
+            ) : friendsQuery.isPending ? (
+              // Amici preselezionati (FAB dal dettaglio amico): attendo la lista
+              // per avere gli username e la preselezione corretta dei partecipanti.
+              <div className="flex justify-center py-6">
+                <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+              </div>
+            ) : (
+              // La key cambia con i partecipanti: quote e selezioni ripartono da zero.
+              <BillForm
+                key={`personal-${friendIds.join(',')}`}
+                members={personalMembers}
+                submitLabel="Crea spesa"
+                isPending={createMutation.isPending}
+                error={error}
+                onSubmit={handleSubmit}
+              />
+            )
           ) : (
-            // La key cambia con i partecipanti: quote e selezioni ripartono da zero.
-            <BillForm
-              key={`personal-${friendIds.join(',')}`}
-              members={personalMembers}
-              submitLabel="Crea spesa"
+            <GroupBillForm
+              key={groupId}
+              groupId={groupId}
               isPending={createMutation.isPending}
               error={error}
               onSubmit={handleSubmit}
             />
-          )
-        ) : (
-          <GroupBillForm
-            key={groupId}
-            groupId={groupId}
-            isPending={createMutation.isPending}
-            error={error}
-            onSubmit={handleSubmit}
-          />
-        )}
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
