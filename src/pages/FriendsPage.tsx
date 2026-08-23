@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SendFriendRequestDialog from '@/components/SendFriendRequestDialog'
+import UserAvatar from '@/components/UserAvatar'
 import { cn } from '@/lib/utils'
 import { getApiErrorMessage } from '@/api/errors'
 import {
@@ -139,7 +140,8 @@ function FriendsTab() {
         ) : (
           friends.map((friend) => (
             <Card key={friend.userId}>
-              <CardContent className="flex items-center gap-2 py-3">
+              <CardContent className="flex items-center gap-3 py-3">
+                <UserAvatar />
                 <button
                   type="button"
                   className="min-w-0 flex-1 text-left"
@@ -230,10 +232,15 @@ function ReceivedTab() {
       {pending.map((req) => (
         <Card key={req.friendshipId}>
           <CardContent className="flex flex-col gap-2 py-3">
-            <div>
-              <p className="font-medium">{req.applicant?.username}</p>
-              {req.messaggio && <p className="text-muted-foreground text-sm">“{req.messaggio}”</p>}
-              <p className="text-muted-foreground text-xs">{formatDate(req.dataRichiesta)}</p>
+            <div className="flex items-center gap-3">
+              <UserAvatar />
+              <div className="min-w-0">
+                <p className="truncate font-medium">{req.applicant?.username}</p>
+                {req.messaggio && (
+                  <p className="text-muted-foreground text-sm">“{req.messaggio}”</p>
+                )}
+                <p className="text-muted-foreground text-xs">{formatDate(req.dataRichiesta)}</p>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button
@@ -287,11 +294,14 @@ function SentTab() {
       {(sentQuery.data?.content ?? []).map((req) => (
         <Card key={req.friendshipId}>
           <CardContent className="flex items-center justify-between gap-2 py-3">
-            <div className="min-w-0">
-              <p className="truncate font-medium">{req.recipient?.username}</p>
-              <p className="text-muted-foreground text-xs">
-                {STATO_LABEL[req.stato ?? ''] ?? req.stato} · {formatDate(req.dataRichiesta)}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <UserAvatar />
+              <div className="min-w-0">
+                <p className="truncate font-medium">{req.recipient?.username}</p>
+                <p className="text-muted-foreground text-xs">
+                  {STATO_LABEL[req.stato ?? ''] ?? req.stato} · {formatDate(req.dataRichiesta)}
+                </p>
+              </div>
             </div>
             {req.stato === 'IN_ATTESA' && (
               <Button
