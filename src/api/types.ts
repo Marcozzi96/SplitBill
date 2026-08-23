@@ -268,6 +268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login con Google
+         * @description Verifica l'ID token Google e restituisce un JWT. Se l'email non è registrata viene creato un nuovo utente senza password; se è già registrata (anche con password) viene fatto l'account linking sull'email verificata da Google
+         */
+        post: operations["loginGoogle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/forgotPassword": {
         parameters: {
             query?: never;
@@ -711,6 +731,7 @@ export interface components {
             userId?: number;
             username?: string;
             email?: string;
+            hasPassword?: boolean;
         };
         BillDTO: {
             /** Format: int64 */
@@ -763,6 +784,9 @@ export interface components {
             email?: string;
             password?: string;
         };
+        GoogleLoginRequest: {
+            idToken?: string;
+        };
         ForgotPasswordRequest: {
             email?: string;
         };
@@ -781,34 +805,34 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqSenDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageableObject: {
-            paged?: boolean;
-            /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
-            pageNumber?: number;
-            unpaged?: boolean;
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            unpaged?: boolean;
         };
         SortObject: {
+            empty?: boolean;
             sorted?: boolean;
             unsorted?: boolean;
-            empty?: boolean;
         };
         FriendshipReqRecDTO: {
             /** Format: int64 */
@@ -825,17 +849,17 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqRecDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageUserDTO: {
@@ -843,17 +867,17 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["UserDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PagePaymentDTO: {
@@ -861,17 +885,17 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaymentDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageGroupDTO: {
@@ -879,17 +903,17 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["GroupDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         UserSettlementDTO: {
@@ -929,17 +953,17 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["BillDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
     };
@@ -1672,6 +1696,57 @@ export interface operations {
                 };
             };
             /** @description Credenziali non valide */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Troppe richieste, riprovare più tardi */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuthResponse"];
+                };
+            };
+        };
+    };
+    loginGoogle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Autenticazione avvenuta con successo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Login con Google non configurato */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Token Google non valido */
             401: {
                 headers: {
                     [name: string]: unknown;

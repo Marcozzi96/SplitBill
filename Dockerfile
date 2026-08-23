@@ -7,6 +7,9 @@ COPY . .
 # Base URL delle API fissato a build time (Vite lo inlines nel bundle)
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# OAuth Client ID Google (bottone "Continua con Google"), anche lui inlined a build time
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build
 
 # Stage 2: file statici serviti da nginx

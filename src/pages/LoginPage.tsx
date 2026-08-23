@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { useLogin } from '@/api/hooks/auth'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
+import GoogleLoginButton from '@/components/GoogleLoginButton'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -71,6 +72,16 @@ export default function LoginPage() {
               <Button type="submit" className="h-11 w-full" disabled={loginMutation.isPending}>
                 {loginMutation.isPending ? 'Accesso in corso…' : 'Accedi'}
               </Button>
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-border h-px flex-1" />
+                    <span className="text-muted-foreground text-xs uppercase">oppure</span>
+                    <div className="bg-border h-px flex-1" />
+                  </div>
+                  <GoogleLoginButton onError={setError} />
+                </>
+              )}
               <p className="text-muted-foreground text-center text-sm">
                 <Link to="/forgot-password" className="text-primary underline-offset-4 hover:underline">
                   Password dimenticata?

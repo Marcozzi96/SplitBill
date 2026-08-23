@@ -27,6 +27,15 @@ export function useLogin() {
   })
 }
 
+// Login con Google Identity Services: il backend verifica l'ID token e
+// risponde con lo stesso AuthResponse di /auth/login (crea l'utente se nuovo).
+export function useGoogleLogin() {
+  return useMutation({
+    mutationFn: async (data: { idToken: string }) =>
+      (await api.post<AuthResponse>('/auth/google', data)).data,
+  })
+}
+
 export function useRegister() {
   return useMutation({
     mutationFn: async (data: Required<Pick<AuthRequest, 'username' | 'email' | 'password'>>) =>

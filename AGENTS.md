@@ -49,6 +49,7 @@ src/
 │   # CreateGroupDialog.tsx: creazione gruppo (pagina Gruppi e FAB su /groups)
 │   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Home, dettaglio gruppo; importo pre-compilato al massimo del debito)
 │   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
+│   # GoogleLoginButton.tsx: bottone "Continua con Google" (Login/Register), visibile solo se VITE_GOOGLE_CLIENT_ID è valorizzata
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; vedi progettazione-fe.md §4)
 ├── router.tsx
@@ -78,6 +79,8 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **Mutazioni**: dopo ogni mutazione invalidare le query TanStack Query correlate (bilanci, settlement, liste).
 - **Date**: stringhe ISO dal backend (`YYYY-MM-DD` per LocalDate).
 - **Env**: base URL API in `VITE_API_BASE_URL` (vedi `.env.example`). In dev, se assente, il default è `http://<host-della-pagina>:8080` — così i test da smartphone in LAN funzionano senza configurazione. Mai committare `.env`.
+- **Login Google**: `POST /auth/google` con body `{ "idToken": "<JWT Google>" }` (Google Identity Services, script `accounts.google.com/gsi/client`), stessa `AuthResponse` di `/auth/login`. Bottone ufficiale in `src/components/GoogleLoginButton.tsx` (usato in Login e Register): visibile solo se `VITE_GOOGLE_CLIENT_ID` è valorizzata (feature flag; anche build arg Docker come `VITE_API_BASE_URL`). Tipi GSI dichiarati nel componente, nessuna dipendenza npm.
+- **Utenti senza password**: `UserDTO.hasPassword === false` → account creato via Google: accede solo con Google e può impostare una password dalle Impostazioni (campo "Password attuale" nascosto, richiesta `/user/update` senza `oldPassword`).
 
 ## Stile
 

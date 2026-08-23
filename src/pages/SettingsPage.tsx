@@ -84,18 +84,20 @@ function ThemeCard() {
 }
 
 // Cambio username: il backend richiede la password attuale e ritorna un nuovo token.
+// Utenti creati via Google (hasPassword === false): nessuna password da verificare.
 function UsernameCard() {
   const { user, login } = useAuth()
   const updateUser = useUpdateUser()
   const [username, setUsername] = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const hasPassword = user?.hasPassword !== false
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
     updateUser.mutate(
-      { username, oldPassword },
+      hasPassword ? { username, oldPassword } : { username },
       {
         onSuccess: (auth) => {
           login(auth)
@@ -128,17 +130,19 @@ function UsernameCard() {
                 onChange={(e) => setUsername(e.target.value)}
               />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="username-old-password">Password attuale</FieldLabel>
-              <Input
-                id="username-old-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-              />
-            </Field>
+            {hasPassword && (
+              <Field>
+                <FieldLabel htmlFor="username-old-password">Password attuale</FieldLabel>
+                <Input
+                  id="username-old-password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                />
+              </Field>
+            )}
             {error && <FieldError>{error}</FieldError>}
             <Button type="submit" className="h-11 w-full" disabled={updateUser.isPending}>
               {updateUser.isPending ? 'Salvataggio in corso…' : 'Salva username'}
@@ -151,13 +155,15 @@ function UsernameCard() {
 }
 
 // Cambio password: il backend richiede la password attuale e ritorna un nuovo token.
+// Utenti creati via Google (hasPassword === false): prima impostazione, senza password attuale.
 function PasswordCard() {
-  const { login } = useAuth()
+  const { user, login } = useAuth()
   const updateUser = useUpdateUser()
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const hasPassword = user?.hasPassword !== false
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -167,14 +173,14 @@ function PasswordCard() {
       return
     }
     updateUser.mutate(
-      { password: newPassword, oldPassword },
+      hasPassword ? { password: newPassword, oldPassword } : { password: newPassword },
       {
         onSuccess: (auth) => {
           login(auth)
           setOldPassword('')
           setNewPassword('')
           setConfirmPassword('')
-          toast.success('Password aggiornata')
+          toast.success(hasPassword ? 'Password aggiornata' : 'Password impostata')
         },
         onError: (err) => setError(getApiErrorMessage(err)),
       },
@@ -184,22 +190,30 @@ function PasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Cambia password</CardTitle>
+        <CardTitle className="text-lg">{hasPassword ? 'Cambia password' : 'Imposta password'}</CardTitle>
+        {!hasPassword && (
+          <CardDescription>
+            Il tuo account è stato creato con Google: imposta una password per poter accedere anche
+            con email e password.
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="old-password">Password attuale</FieldLabel>
-              <Input
-                id="old-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-              />
-            </Field>
+            {hasPassword && (
+              <Field>
+                <FieldLabel htmlFor="old-password">Password attuale</FieldLabel>
+                <Input
+                  id="old-password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                />
+              </Field>
+            )}
             <Field>
               <FieldLabel htmlFor="new-password">Nuova password</FieldLabel>
               <Input
