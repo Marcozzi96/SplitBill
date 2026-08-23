@@ -11,7 +11,7 @@ import FriendsPage from './pages/FriendsPage'
 import GroupsPage from './pages/GroupsPage'
 import GroupDetailPage from './pages/GroupDetailPage'
 import FriendDetailPage from './pages/FriendDetailPage'
-import ProfilePage from './pages/ProfilePage'
+import SettingsPage from './pages/SettingsPage'
 
 export const router = createBrowserRouter([
   // Route pubbliche di autenticazione.
@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
           { path: '/friends/:userId', element: <FriendDetailPage /> },
           { path: '/groups', element: <GroupsPage /> },
           { path: '/groups/:groupId', element: <GroupDetailPage /> },
-          { path: '/profile', element: <ProfilePage /> },
+          { path: '/settings', element: <SettingsPage /> },
         ],
       },
     ],

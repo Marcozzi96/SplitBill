@@ -7,6 +7,7 @@ type AuthResponse = components['schemas']['AuthResponse']
 type UserDTO = components['schemas']['UserDTO']
 type ForgotPasswordRequest = components['schemas']['ForgotPasswordRequest']
 type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
+type UpdateUserRequest = components['schemas']['UpdateUserRequest']
 
 // Utente autenticato corrente (idratazione del contesto al reload).
 export function useCurrentUser(enabled: boolean) {
@@ -55,5 +56,13 @@ export function useResetPassword() {
   return useMutation({
     mutationFn: async (data: ResetPasswordRequest) =>
       (await api.post<string>('/auth/resetPassword', data)).data,
+  })
+}
+
+// Update profilo: il backend richiede oldPassword e ritorna un nuovo token da sostituire.
+export function useUpdateUser() {
+  return useMutation({
+    mutationFn: async (data: UpdateUserRequest) =>
+      (await api.put<AuthResponse>('/user/update', data)).data,
   })
 }

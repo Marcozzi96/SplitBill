@@ -78,7 +78,7 @@ beforeEach(() => {
 
 // Il FAB cambia azione in base alla pagina corrente.
 describe('AppLayout — FAB contestuale', () => {
-  it.each(['/', '/profile'])('su %s apre la nuova spesa con scelta del contesto', async (path) => {
+  it.each(['/', '/settings'])('su %s apre la nuova spesa con scelta del contesto', async (path) => {
     renderAt(path)
 
     fireEvent.click(screen.getByRole('button', { name: 'Nuova spesa' }))

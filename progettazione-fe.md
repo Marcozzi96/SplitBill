@@ -81,7 +81,7 @@ src/
 │   ├── NewBillPage.tsx
 │   ├── BalancesPage.tsx    # saldo personale + "chi deve a chi"
 │   ├── PaymentsPage.tsx    # cronologia rimborsi + nuovo rimborso
-│   └── ProfilePage.tsx     # update profilo, delete account
+│   └── SettingsPage.tsx    # update profilo (username/password), delete account
 ├── router.tsx
 └── main.tsx
 ```

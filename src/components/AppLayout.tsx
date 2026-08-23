@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useMatch } from 'react-router-dom'
-import { Home, Plus, Users, UsersRound, CircleUserRound } from 'lucide-react'
+import { Home, Plus, Users, UsersRound, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import GlobalCreateBillDialog from '@/components/GlobalCreateBillDialog'
 import SendFriendRequestDialog from '@/components/SendFriendRequestDialog'
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/friends', label: 'Amici', icon: Users },
   { to: '/groups', label: 'Gruppi', icon: UsersRound },
-  { to: '/profile', label: 'Profilo', icon: CircleUserRound },
+  { to: '/settings', label: 'Impostazioni', icon: Settings },
 ] as const
 
 export default function AppLayout() {
@@ -31,7 +31,7 @@ export default function AppLayout() {
   // - /friends/:userId: nuova spesa, default personale con quell'amico
   // - /groups: nuovo gruppo
   // - /groups/:groupId: nuova spesa, default quel gruppo
-  // - altrove (Home, Profilo): nuova spesa con scelta del contesto
+  // - altrove (Home, Impostazioni): nuova spesa con scelta del contesto
   const fabLabel = isFriendsList
     ? 'Nuova richiesta di amicizia'
     : isGroupsList
