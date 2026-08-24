@@ -117,5 +117,5 @@ export default function GoogleLoginButton({ onError }: GoogleLoginButtonProps) {
 
   if (!clientId) return null
 
-  return <div ref={containerRef} className="flex justify-center" />
+  return <div ref={containerRef} className="gsi-button-container flex justify-center" />
 }

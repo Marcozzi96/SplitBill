@@ -139,4 +139,10 @@
   html {
     @apply font-sans;
     }
+  /* Bottone Google (GSI): l'iframe cross-origin ha un documento "light"; in dark
+     mode erediterebbe color-scheme: dark e Chrome gli forzerebbe uno sfondo opaco
+     bianco. Forzando light il backdrop torna trasparente (vedi GoogleLoginButton). */
+  .gsi-button-container iframe {
+    color-scheme: light;
+    }
 }
