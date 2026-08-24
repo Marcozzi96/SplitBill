@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import BillForm, { type BillFormValues } from './BillForm'
 import { AuthContext, type AuthContextValue } from '@/auth/auth-context'
 import type { components } from '@/api/types'
@@ -12,6 +12,12 @@ const members: GroupMemberDTO[] = [
   { userId: 3, username: 'anna', email: 'anna@example.com' },
 ]
 
+// Membro con account eliminato (anonimizzato dal backend).
+const membersWithDeleted: GroupMemberDTO[] = [
+  ...members,
+  { userId: 4, username: 'UtenteEliminato', deleted: true },
+]
+
 const authValue: AuthContextValue = {
   user: { userId: 1, username: 'mario', email: 'mario@example.com' },
   token: 'token',
@@ -22,12 +28,18 @@ const authValue: AuthContextValue = {
   logout: vi.fn(),
 }
 
-function renderForm(props: { bill?: BillDTO; onSubmit?: (values: BillFormValues) => void } = {}) {
+function renderForm(
+  props: {
+    bill?: BillDTO
+    members?: GroupMemberDTO[]
+    onSubmit?: (values: BillFormValues) => void
+  } = {},
+) {
   const onSubmit = props.onSubmit ?? vi.fn()
   render(
     <AuthContext.Provider value={authValue}>
       <BillForm
-        members={members}
+        members={props.members ?? members}
         bill={props.bill}
         submitLabel="Crea spesa"
         isPending={false}
@@ -133,5 +145,40 @@ describe('BillForm', () => {
     expect(screen.getByLabelText('Partecipa anna')).toHaveProperty('checked', false)
     // Il buyer resta selezionabile in "Pagato da" anche senza quota.
     expect(screen.getByLabelText('Pagato da')).toHaveProperty('value', '1')
+  })
+
+  it('in creazione un membro eliminato non è selezionabile né tra i "Pagato da"', () => {
+    renderForm({ members: membersWithDeleted })
+
+    const checkbox = screen.getByLabelText('Partecipa UtenteEliminato')
+    expect(checkbox).toHaveProperty('checked', false)
+    expect(checkbox).toHaveProperty('disabled', true)
+    // Gli altri membri restano selezionati di default.
+    expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', true)
+    // Escluso dalle opzioni "Pagato da".
+    const buyerSelect = screen.getByLabelText('Pagato da')
+    expect(within(buyerSelect).queryByRole('option', { name: 'UtenteEliminato' })).toBeNull()
+  })
+
+  it('in modifica un eliminato con quota preesistente resta selezionato ed editabile', () => {
+    // Spesa da 10€ pagata da mario: 4€ a carico dell'eliminato, 6€ di luigi.
+    const bill: BillDTO = {
+      billId: 2,
+      description: 'Cena',
+      amount: 10,
+      notes: '',
+      buyer: { userId: 1, username: 'mario' },
+      transactions: [
+        { userId: 4, amount: -4 },
+        { userId: 2, amount: -6 },
+        { userId: 1, amount: 10 },
+      ],
+    }
+    renderForm({ bill, members: membersWithDeleted })
+
+    const checkbox = screen.getByLabelText('Partecipa UtenteEliminato')
+    expect(checkbox).toHaveProperty('checked', true)
+    expect(checkbox).toHaveProperty('disabled', false)
+    expect(screen.getByLabelText('Quota UtenteEliminato')).toHaveProperty('value', '4,00')
   })
 })

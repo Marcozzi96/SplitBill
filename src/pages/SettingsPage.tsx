@@ -5,10 +5,20 @@ import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/auth/auth-context'
-import { useUpdateUser } from '@/api/hooks/auth'
+import { useDeleteUser, useUpdateUser } from '@/api/hooks/auth'
+import { useMySettlements } from '@/api/hooks/balance'
 import { getApiErrorMessage } from '@/api/errors'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +43,7 @@ export default function SettingsPage() {
       <ThemeCard />
       <UsernameCard />
       <PasswordCard />
+      <DeleteAccountCard />
       <Card>
         <CardContent>
           <Button variant="destructive" className="h-11 w-full" onClick={handleLogout}>
@@ -149,6 +160,104 @@ function UsernameCard() {
             </Button>
           </FieldGroup>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Eliminazione account: il backend anonimizza i dati (operazione definitiva).
+// Su successo: logout e ritorno alla pagina di login.
+function DeleteAccountCard() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const deleteUser = useDeleteUser()
+  const settlementsQuery = useMySettlements()
+  const [open, setOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const openSettlements = settlementsQuery.data?.length ?? 0
+  const confirmMatches = confirmText.trim().toUpperCase() === 'ELIMINA'
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      setConfirmText('')
+      setError(null)
+    }
+  }
+
+  function handleDelete() {
+    setError(null)
+    deleteUser.mutate(undefined, {
+      onSuccess: () => {
+        logout()
+        toast.success('Account eliminato')
+        navigate('/login', { replace: true })
+      },
+      onError: (err) => setError(getApiErrorMessage(err)),
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Elimina account</CardTitle>
+        <CardDescription>
+          I tuoi dati saranno anonimizzati. Le spese nei gruppi resteranno visibili come
+          &quot;UtenteEliminato&quot;. L&apos;operazione è definitiva.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive" className="h-11 w-full" onClick={() => setOpen(true)}>
+          Elimina account
+        </Button>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Elimina account</DialogTitle>
+              <DialogDescription>
+                Eliminare definitivamente il tuo account? I tuoi dati saranno anonimizzati e le tue
+                spese resteranno visibili come &quot;UtenteEliminato&quot;.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <FieldGroup>
+                {openSettlements > 0 && (
+                  <FieldError>
+                    Hai ancora {openSettlements}{' '}
+                    {openSettlements === 1 ? 'debito o credito aperto' : 'debiti o crediti aperti'}:
+                    resteranno visibili agli altri come &quot;UtenteEliminato&quot;.
+                  </FieldError>
+                )}
+                <Field>
+                  <FieldLabel htmlFor="deleteConfirm">
+                    Scrivi ELIMINA per confermare
+                  </FieldLabel>
+                  <Input
+                    id="deleteConfirm"
+                    autoComplete="off"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                  />
+                </Field>
+                {error && <FieldError>{error}</FieldError>}
+              </FieldGroup>
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Annulla
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={!confirmMatches || deleteUser.isPending}
+                onClick={handleDelete}
+              >
+                {deleteUser.isPending ? 'Eliminazione in corso…' : 'Elimina'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

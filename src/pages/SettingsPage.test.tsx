@@ -18,6 +18,8 @@ vi.mock('@/api/client', () => ({
 }))
 
 const mockedPut = vi.mocked(api.put)
+const mockedGet = vi.mocked(api.get)
+const mockedDelete = vi.mocked(api.delete)
 
 const authValue: AuthContextValue = {
   user: { userId: 1, username: 'mario', email: 'mario@example.com' },
@@ -48,6 +50,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   document.documentElement.classList.remove('dark')
+  // useMySettlements (DeleteAccountCard): default nessun debito aperto.
+  mockedGet.mockResolvedValue({ data: [] })
 })
 
 // jsdom non implementa matchMedia, richiesto da next-themes.
@@ -147,5 +151,63 @@ describe('SettingsPage', () => {
       })
     })
     expect(authValue.login).toHaveBeenCalledWith(auth)
+  })
+
+  it('l’eliminazione account chiama /user/delete, poi logout', async () => {
+    mockedDelete.mockResolvedValue({ data: undefined })
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina account' }))
+    fireEvent.change(await screen.findByLabelText('Scrivi ELIMINA per confermare'), {
+      target: { value: 'ELIMINA' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina' }))
+
+    await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith('/user/delete'))
+    expect(authValue.logout).toHaveBeenCalled()
+  })
+
+  it('il bottone Elimina resta disabilitato senza la conferma testuale', async () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina account' }))
+    const confirm = await screen.findByRole('button', { name: 'Elimina' })
+    expect(confirm).toHaveProperty('disabled', true)
+
+    fireEvent.change(screen.getByLabelText('Scrivi ELIMINA per confermare'), {
+      target: { value: 'elimina' },
+    })
+    expect(screen.getByRole('button', { name: 'Elimina' })).toHaveProperty('disabled', false)
+  })
+
+  it('mostra un avviso se ci sono debiti o crediti aperti', async () => {
+    mockedGet.mockResolvedValue({
+      data: [
+        { counterparty: { userId: 2, username: 'luigi' }, amount: 10, direction: 'DEBT' },
+        { counterparty: { userId: 3, username: 'anna' }, amount: 5, direction: 'CREDIT' },
+      ],
+    })
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina account' }))
+
+    expect(await screen.findByText(/2 debiti o crediti aperti/)).toBeTruthy()
+  })
+
+  it('l’errore API di eliminazione account è mostrato nel dialog', async () => {
+    mockedDelete.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 400, data: { message: 'Operazione non consentita' } },
+    })
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina account' }))
+    fireEvent.change(await screen.findByLabelText('Scrivi ELIMINA per confermare'), {
+      target: { value: 'ELIMINA' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina' }))
+
+    expect(await screen.findByText('Operazione non consentita')).toBeTruthy()
+    expect(authValue.logout).not.toHaveBeenCalled()
   })
 })

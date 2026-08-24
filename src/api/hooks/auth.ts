@@ -75,3 +75,11 @@ export function useUpdateUser() {
       (await api.put<AuthResponse>('/user/update', data)).data,
   })
 }
+
+// Eliminazione account: il backend anonimizza i dati (operazione definitiva);
+// le spese restano visibili come "UtenteEliminato".
+export function useDeleteUser() {
+  return useMutation({
+    mutationFn: async () => (await api.delete('/user/delete')).data,
+  })
+}

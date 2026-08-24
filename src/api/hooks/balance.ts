@@ -91,3 +91,23 @@ export function useCreatePayment() {
     },
   })
 }
+
+// Il creditore (utente autenticato) "dimentica" l'intero debito che un utente
+// ELIMINATO ha verso di lui: il backend lo estingue con un Payment automatico.
+// 400 se il payer non è eliminato o non ha debiti; 404 se inesistente.
+export function useForgiveDebt() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ payerId, groupId }: { payerId: number; groupId?: number }) =>
+      (
+        await api.post<PaymentDTO>('/payments/forgive', null, {
+          params: { payerId, groupId },
+        })
+      ).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BALANCE_ROOT })
+      queryClient.invalidateQueries({ queryKey: GROUPS_ROOT })
+      queryClient.invalidateQueries({ queryKey: PAYMENTS_ROOT })
+    },
+  })
+}

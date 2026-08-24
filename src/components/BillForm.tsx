@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { formatEuro, parseAmountToCents, splitEqually } from '@/lib/money'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
 import type { components } from '@/api/types'
 
@@ -73,6 +74,15 @@ export default function BillForm({
     }
     return initial
   })
+  // Membri con account eliminato: non possono essere aggiunti a nuove spese.
+  // In modifica restano selezionabili solo se hanno già una quota nella spesa
+  // (il backend accetta i deleted preesistenti); il buyer attuale resta
+  // comunque selezionabile in "Pagato da" (vedi buyerOptions).
+  const preexistingShareIds = new Set(
+    bill ? Object.keys(initialSharesCents(bill)).map(Number) : [],
+  )
+  const isLocked = (m: GroupMemberDTO) =>
+    m.deleted === true && !preexistingShareIds.has(m.userId!)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
     if (bill) {
       // In modifica sono preselezionati i partecipanti con quota > 0.
@@ -81,7 +91,7 @@ export default function BillForm({
       )
       if (withShare.size > 0) return withShare
     }
-    return new Set(members.map((m) => m.userId!))
+    return new Set(members.filter((m) => !isLocked(m)).map((m) => m.userId!))
   })
   const [localError, setLocalError] = useState<string | null>(null)
   // Chi ha pagato: default l'utente corrente (in modifica, il buyer della spesa).
@@ -227,13 +237,20 @@ export default function BillForm({
           <div className="flex flex-col gap-2">
             {members.map((member) => {
               const selected = selectedIds.has(member.userId!)
+              const locked = isLocked(member)
               return (
                 <div key={member.userId} className="flex items-center justify-between gap-2">
-                  <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2">
+                  <label
+                    className={cn(
+                      'flex min-h-11 min-w-0 flex-1 items-center gap-2',
+                      locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                    )}
+                  >
                     <input
                       type="checkbox"
                       className="size-4 shrink-0"
                       checked={selected}
+                      disabled={locked}
                       onChange={() => toggleMember(member.userId!)}
                       aria-label={`Partecipa ${member.username}`}
                     />

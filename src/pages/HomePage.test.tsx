@@ -233,4 +233,54 @@ describe('HomePage', () => {
 
     await screen.findByText('Importo superiore al debito effettivo')
   })
+
+  it('controparte eliminata (CREDIT): icona, dialog e "Dimentica il debito"', async () => {
+    mockedPost.mockResolvedValue({ data: { paymentId: 3 } })
+    mockApi({
+      settlementsData: [
+        {
+          counterparty: { userId: 9, username: 'UtenteEliminato', deleted: true },
+          amount: 12,
+          direction: 'CREDIT',
+          groupId: 5,
+          groupName: 'Vacanze',
+        },
+      ],
+    })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Utente eliminato' }))
+
+    expect(await screen.findByText(/ha eliminato il proprio account/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Dimentica il debito' }))
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/payments/forgive', null, {
+        params: { payerId: 9, groupId: 5 },
+      }),
+    )
+  })
+
+  it('controparte eliminata (DEBT): dialog senza "Dimentica il debito"', async () => {
+    mockApi({
+      settlementsData: [
+        {
+          counterparty: { userId: 9, username: 'UtenteEliminato', deleted: true },
+          amount: 12,
+          direction: 'DEBT',
+          groupId: null,
+          groupName: null,
+        },
+      ],
+    })
+    renderPage()
+
+    // Il rimborso resta disponibile come prima.
+    expect(await screen.findByRole('button', { name: 'Rimborsa' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Utente eliminato' }))
+
+    expect(await screen.findByText(/ha eliminato il proprio account/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Dimentica il debito' })).toBeNull()
+  })
 })

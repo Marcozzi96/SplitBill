@@ -198,7 +198,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 |--------|------|-------|--------|------|
 | GET | `/user/me` | — | `UserDTO` | |
 | PUT | `/user/update` | body `{ username?, email?, password?, oldPassword }` | `AuthResponse` | `oldPassword` obbligatoria; ritorna **nuovo token da sostituire**; 401 password errata, 409 username/email già in uso |
-| DELETE | `/user/delete` | — | `200` | Soft delete + anonimizzazione; storico spese preservato |
+| DELETE | `/user/delete` | — | `200` | Soft delete + anonimizzazione; storico spese preservato. Nei DTO l'utente eliminato appare come `username: "UtenteEliminato"`, `email: null`, `deleted: true` |
 | POST | `/user/sendFriendshipRequest?name=&message=` | query `name` (username o email), `message` | `200` | 400 se già amici/richiesta pendente |
 | GET | `/user/getFriends?page=&size=` | paginata | `Page<UserDTO>` | |
 | GET | `/user/getFriendshipReqReceived?page=&size=` | paginata | `Page<FriendshipReqRecDTO>` | |
@@ -242,6 +242,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Metodo | Path | Input | Output | Note |
 |--------|------|-------|--------|------|
 | POST | `/payments?payeeId=&amount=&groupId=&notes=` | query (`groupId`, `notes` opzionali) | `PaymentDTO` | payer = utente autenticato; **409 se supera il debito effettivo** |
+| POST | `/payments/forgive?payerId=&groupId=` | query (`groupId` opzionale) | `PaymentDTO` | "Dimentica il debito": estingue l'intero debito che un utente **eliminato** (`payerId`) ha verso l'autenticato; 400 se payer non eliminato o nessun debito |
 | GET | `/payments?page=&size=` | paginata | `Page<PaymentDTO>` | Rimborsi in cui l'utente è payer o payee |
 
 ### 6.9 Endpoint — Bilanci (`/balance`, autenticati)

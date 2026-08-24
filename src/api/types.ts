@@ -148,6 +148,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payments/forgive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dimentica il debito di un utente eliminato
+         * @description Registra un rimborso fittizio pari al debito residuo che un utente eliminato ha verso l'utente autenticato, azzerandolo. Con groupId il creditore deve essere un membro attivo del gruppo.
+         */
+        post: operations["forgiveDebt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/groups/create": {
         parameters: {
             query?: never;
@@ -732,6 +752,7 @@ export interface components {
             username?: string;
             email?: string;
             hasPassword?: boolean;
+            deleted?: boolean;
         };
         BillDTO: {
             /** Format: int64 */
@@ -808,13 +829,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqSenDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -852,13 +873,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqRecDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -870,13 +891,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["UserDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -888,13 +909,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaymentDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -906,13 +927,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["GroupDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -939,6 +960,7 @@ export interface components {
             role?: "MEMBER" | "ADMIN";
             /** Format: date */
             dataIngresso?: string;
+            deleted?: boolean;
         };
         UserBalanceDTO: {
             /** Format: int64 */
@@ -956,13 +978,13 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
-            numberOfElements?: number;
-            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["BillDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
@@ -1468,6 +1490,56 @@ export interface operations {
             };
         };
     };
+    forgiveDebt: {
+        parameters: {
+            query: {
+                payerId: number;
+                groupId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Debito dimenticato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentDTO"];
+                };
+            };
+            /** @description Utente non eliminato, nessun debito da dimenticare o gruppo non valido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentDTO"];
+                };
+            };
+            /** @description Non autenticato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentDTO"];
+                };
+            };
+            /** @description Pagatore non trovato */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentDTO"];
+                };
+            };
+        };
+    };
     createGroup: {
         parameters: {
             query: {
@@ -1737,7 +1809,7 @@ export interface operations {
                     "*/*": components["schemas"]["AuthResponse"];
                 };
             };
-            /** @description Login con Google non configurato */
+            /** @description ID token mancante o login con Google non configurato */
             400: {
                 headers: {
                     [name: string]: unknown;
