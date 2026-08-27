@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -36,9 +37,20 @@ export function SettlementList({
   onPay: (settlement: UserSettlementDTO) => void
 }) {
   const [deletedSettlement, setDeletedSettlement] = useState<UserSettlementDTO | null>(null)
+  const navigate = useNavigate()
 
   if (settlements.length === 0) {
     return <p className="text-muted-foreground py-6 text-center">Nessun debito o credito aperto.</p>
+  }
+
+  // Click su un settlement: se è di gruppo porta al gruppo, altrimenti al
+  // dettaglio dell'amico (tranne controparti eliminate, che non hanno pagina).
+  function goToContext(settlement: UserSettlementDTO) {
+    if (settlement.groupId != null) {
+      navigate(`/groups/${settlement.groupId}`)
+    } else if (settlement.counterparty?.userId != null && !settlement.counterparty.deleted) {
+      navigate(`/friends/${settlement.counterparty.userId}`)
+    }
   }
 
   // Controparti con account eliminato: icona di avviso che apre il dialog
@@ -48,7 +60,10 @@ export function SettlementList({
       <button
         type="button"
         aria-label="Utente eliminato"
-        onClick={() => setDeletedSettlement(settlement)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setDeletedSettlement(settlement)
+        }}
         className="text-destructive -my-3 inline-flex h-11 items-center justify-center px-2 align-middle"
       >
         <TriangleAlert className="size-4" aria-hidden />
@@ -58,7 +73,20 @@ export function SettlementList({
   return (
     <div className="flex flex-col gap-2">
       {settlements.map((settlement, i) => (
-        <Card key={`${settlement.counterparty?.userId}-${settlement.groupId ?? 'personale'}-${i}`}>
+        <Card
+          key={`${settlement.counterparty?.userId}-${settlement.groupId ?? 'personale'}-${i}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => goToContext(settlement)}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              goToContext(settlement)
+            }
+          }}
+          className="hover:bg-accent/50 cursor-pointer transition-colors"
+        >
           <CardContent className="flex items-center justify-between gap-2 py-3">
             <div className="min-w-0">
               {settlement.direction === 'DEBT' ? (
@@ -77,7 +105,14 @@ export function SettlementList({
               <p className="text-muted-foreground text-xs">{contextLabel(settlement)}</p>
             </div>
             {settlement.direction === 'DEBT' && (
-              <Button variant="outline" size="sm" onClick={() => onPay(settlement)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onPay(settlement)
+                }}
+              >
                 Rimborsa
               </Button>
             )}

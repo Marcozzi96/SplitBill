@@ -123,6 +123,12 @@ src/
 - Il backend rifiuta con **409** se l'importo supera il debito effettivo: pre-compilare l'importo massimo con il valore del settlement.
 - Passare sempre il `groupId` letto dal `UserSettlementDTO`: i rimborsi **senza** `groupId` saldano solo debiti personali (settlement con `groupId` null), non quelli dentro i gruppi.
 
+### Eliminazione account
+
+- `DELETE /user/delete` (Impostazioni → "Elimina account", conferma testuale `ELIMINA` + avviso sui debiti/crediti aperti) → soft delete con anonimizzazione; poi logout e redirect a `/login`.
+- L'eliminato resta nei gruppi come membro passivo: le spese storiche restano, ma non può essere aggiunto a nuove spese (nei form i membri `deleted` non sono selezionabili; in modifica restano se già partecipanti).
+- Nei settlement (`/balance/settlements`) la controparte eliminata ha `deleted: true`: il FE mostra un'icona di avviso → popup "Utente eliminato"; se `direction === 'CREDIT'` il popup offre "Dimentica il debito" → `POST /payments/forgive?payerId=&groupId=`.
+
 ### Uscita da un gruppo
 
 - `DELETE /groups/leave/{groupId}`: i debiti/crediti dell'uscente **si estinguono nel gruppo** e vengono trasferiti a livello personale (settlement con `groupId` null, visibili in `/balance/settlements` e saldabili con `POST /payments` senza `groupId`).
@@ -167,10 +173,10 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 
 | DTO | Campi |
 |-----|-------|
-| `UserDTO` | `{ userId: number, username: string, email: string }` |
+| `UserDTO` | `{ userId: number, username: string, email: string, hasPassword: boolean, deleted: boolean }` — utenti eliminati: `username: "UtenteEliminato"`, `email: null`, `deleted: true` |
 | `AuthResponse` | `{ token: string, user: UserDTO }` |
 | `GroupDTO` | `{ groupId: number, name: string, description: string, creationDate: "YYYY-MM-DD", users?: UserDTO[], bills?: BillDTO[] }` |
-| `GroupMemberDTO` | `{ userId: number, username: string, email: string, role: "ADMIN"\|"MEMBER", dataIngresso: "YYYY-MM-DD" }` |
+| `GroupMemberDTO` | `{ userId: number, username: string, email: string, role: "ADMIN"\|"MEMBER", dataIngresso: "YYYY-MM-DD", deleted: boolean }` |
 | `BillDTO` | `{ billId: number, description: string, creationDate: "YYYY-MM-DD", amount: number, notes: string, buyer: UserDTO, groupId: number, transactions?: TransactionDTO[] }` |
 | `TransactionDTO` | `{ transactionId: number, amount: number, userId: number }` |
 | `UserBalanceDTO` | `{ userId: number, username: string, totalPaid: number, totalOwed: number, netBalance: number }` — `netBalance = totalPaid − totalOwed` (positivo = ti devono soldi) |
@@ -200,7 +206,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | PUT | `/user/update` | body `{ username?, email?, password?, oldPassword }` | `AuthResponse` | `oldPassword` obbligatoria; ritorna **nuovo token da sostituire**; 401 password errata, 409 username/email già in uso |
 | DELETE | `/user/delete` | — | `200` | Soft delete + anonimizzazione; storico spese preservato. Nei DTO l'utente eliminato appare come `username: "UtenteEliminato"`, `email: null`, `deleted: true` |
 | POST | `/user/sendFriendshipRequest?name=&message=` | query `name` (username o email), `message` | `200` | 400 se già amici/richiesta pendente |
-| GET | `/user/getFriends?page=&size=` | paginata | `Page<UserDTO>` | |
+| GET | `/user/getFriends?page=&size=` | paginata | `Page<UserDTO>` | Ordine alfabetico per username (case-insensitive) |
 | GET | `/user/getFriendshipReqReceived?page=&size=` | paginata | `Page<FriendshipReqRecDTO>` | |
 | GET | `/user/getFriendshipReqSent?page=&size=` | paginata | `Page<FriendshipReqSenDTO>` | |
 | GET | `/user/friendshipRequests/count` | — | `{ count: number }` | Badge notifiche |
@@ -229,9 +235,9 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Metodo | Path | Input | Output | Note |
 |--------|------|-------|--------|------|
 | POST | `/bills/new?description=&amount=&notes=&groupId=&buyerId=` | query + body `{ "userId": importo, ... }` | `BillDTO` | Somma debiti **= amount esatto**; il buyer può essere tra i debitori; 400 dati non validi. **`groupId` opzionale**: senza gruppo la spesa è personale (tra amici) e i debitori devono essere amici del buyer. **`buyerId` opzionale** ("Pagato da"): default l'utente autenticato |
-| GET | `/bills/group/{groupId}?page=&size=` | paginata | `Page<BillDTO>` | Solo membri del gruppo |
-| GET | `/bills/getMyBills?page=&size=` | paginata | `Page<BillDTO>` | Spese in cui l'utente è coinvolto |
-| GET | `/bills/getWhereImBuyer?page=&size=` | paginata | `Page<BillDTO>` | Spese pagate dall'utente |
+| GET | `/bills/group/{groupId}?page=&size=` | paginata | `Page<BillDTO>` | Solo membri del gruppo; dalla più recente |
+| GET | `/bills/getMyBills?page=&size=` | paginata | `Page<BillDTO>` | Spese in cui l'utente è coinvolto; dalla più recente |
+| GET | `/bills/getWhereImBuyer?page=&size=` | paginata | `Page<BillDTO>` | Spese pagate dall'utente; dalla più recente |
 | PUT | `/bills/{id}?description=&amount=&notes=&buyerId=` | query + body mappa debiti | `BillDTO` | Qualsiasi membro attivo del gruppo (per le personali: chiunque sia coinvolto); stesse validazioni della creazione; `buyerId` opzionale per cambiare chi ha pagato |
 | DELETE | `/bills/{id}` | path | `204` | Qualsiasi membro attivo del gruppo (per le personali: chiunque sia coinvolto) (401/404) |
 
@@ -243,7 +249,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 |--------|------|-------|--------|------|
 | POST | `/payments?payeeId=&amount=&groupId=&notes=` | query (`groupId`, `notes` opzionali) | `PaymentDTO` | payer = utente autenticato; **409 se supera il debito effettivo** |
 | POST | `/payments/forgive?payerId=&groupId=` | query (`groupId` opzionale) | `PaymentDTO` | "Dimentica il debito": estingue l'intero debito che un utente **eliminato** (`payerId`) ha verso l'autenticato; 400 se payer non eliminato o nessun debito |
-| GET | `/payments?page=&size=` | paginata | `Page<PaymentDTO>` | Rimborsi in cui l'utente è payer o payee |
+| GET | `/payments?page=&size=` | paginata | `Page<PaymentDTO>` | Rimborsi in cui l'utente è payer o payee; dalla più recente |
 
 ### 6.9 Endpoint — Bilanci (`/balance`, autenticati)
 
