@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import ReleasesCard from '@/components/ReleasesCard'
 import { useServerStatus } from '@/api/hooks/status'
 import type { HttpStatus, ServerStatus } from '@/api/statusTypes'
 import { getApiErrorMessage } from '@/api/errors'
@@ -243,6 +244,8 @@ export default function StatusPage() {
               <StatusCodeStats http={status.http} />
             </CardContent>
           </Card>
+
+          <ReleasesCard />
         </>
       )}
     </div>

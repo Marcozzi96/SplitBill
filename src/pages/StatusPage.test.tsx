@@ -56,6 +56,16 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // ReleasesCard chiama l'API GitHub con fetch nativo: va stubbato per non fare
+  // richieste di rete reali nei test.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] }),
+  )
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('StatusPage', () => {
