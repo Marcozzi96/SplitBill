@@ -13,7 +13,9 @@ import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/friends', label: 'Amici', icon: Users },
-  { to: '/groups', label: 'Gruppi', icon: GroupsCircleIcon },
+  // iconClass: l'icona custom dei gruppi riempie meno la viewBox delle icone
+  // lucide, quindi va leggermente ingrandita per apparire delle stesse dimensioni.
+  { to: '/groups', label: 'Gruppi', icon: GroupsCircleIcon, iconClass: 'size-8.5' },
   { to: '/settings', label: 'Impostazioni', icon: Settings },
 ] as const
 
@@ -84,7 +86,7 @@ export default function AppLayout() {
                 }
               >
                 <span className="relative">
-                  <Icon className="size-6" />
+                  <Icon className={cn('size-6', 'iconClass' in rest && rest.iconClass)} />
                   {to === '/friends' && requestsCount > 0 && (
                     <span className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-2.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
                       {requestsCount > 9 ? '9+' : requestsCount}
