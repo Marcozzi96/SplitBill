@@ -38,7 +38,8 @@ describe('BillDetailDialog', () => {
 
     expect(screen.getByText('Pizza')).toBeTruthy()
     expect(screen.getByText(/10 ago 2026 · Personale/)).toBeTruthy()
-    expect(screen.getByText(/20,00\s*€/)).toBeTruthy()
+    // "20,00 €" appare due volte: importo in evidenza e riga "Totale ripartito".
+    expect(screen.getAllByText(/20,00\s*€/)).toHaveLength(2)
     expect(screen.getByText('Pagato da')).toBeTruthy()
     // "mario" appare due volte: buyer e riga della sua quota.
     expect(screen.getAllByText('mario')).toHaveLength(2)
@@ -66,6 +67,13 @@ describe('BillDetailDialog', () => {
     expect(screen.getByText('luigi')).toBeTruthy()
     // Debitore: -10 → quota 10. Buyer: credito 10 su 20 → quota 10.
     expect(screen.getAllByText(/10,00\s*€/)).toHaveLength(2)
+  })
+
+  it('mostra il riepilogo quote: numero partecipanti e totale ripartito', () => {
+    renderDialog()
+
+    expect(screen.getByText('2 partecipanti')).toBeTruthy()
+    expect(screen.getByText('Totale ripartito')).toBeTruthy()
   })
 
   it('usa il fallback di resolveUsername per gli userId sconosciuti', () => {
