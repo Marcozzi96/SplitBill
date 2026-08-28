@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useMatch } from 'react-router-dom'
-import { Home, Plus, Users, UsersRound, Settings } from 'lucide-react'
+import { Home, Plus, Users, Settings } from 'lucide-react'
+import GroupsCircleIcon from '@/components/GroupsCircleIcon'
 import { Button } from '@/components/ui/button'
 import GlobalCreateBillDialog from '@/components/GlobalCreateBillDialog'
 import SendFriendRequestDialog from '@/components/SendFriendRequestDialog'
@@ -12,7 +13,7 @@ import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/friends', label: 'Amici', icon: Users },
-  { to: '/groups', label: 'Gruppi', icon: UsersRound },
+  { to: '/groups', label: 'Gruppi', icon: GroupsCircleIcon },
   { to: '/settings', label: 'Impostazioni', icon: Settings },
 ] as const
 
