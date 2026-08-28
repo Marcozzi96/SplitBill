@@ -35,7 +35,8 @@ src/
 ├── api/            # client axios, tipi generati, hook TanStack Query
 │   ├── client.ts   # istanza axios + interceptor JWT/401
 │   ├── types.ts    # GENERATO da openapi-typescript — non editare a mano
-│   └── hooks/      # useLogin, useFriends, useGroups, useBills, useMyBalance, usePayments, ...
+│   ├── statusTypes.ts  # tipi di GET /api/status (definiti a mano, endpoint fuori da OpenAPI)
+│   └── hooks/      # useLogin, useFriends, useGroups, useBills, useMyBalance, usePayments, useServerStatus, ...
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
@@ -51,8 +52,8 @@ src/
 │   #   il click su un settlement porta al gruppo (se di gruppo) o al dettaglio amico (se personale)
 │   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
 │   # GoogleLoginButton.tsx: bottone "Continua con Google" (Login/Register), visibile solo se VITE_GOOGLE_CLIENT_ID è valorizzata
-├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, ...) — alias import '@/...'
-├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; vedi progettazione-fe.md §4)
+├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, bytes.ts per quantità di byte, ...) — alias import '@/...'
+├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; StatusPage = monitoraggio server su /status, raggiungibile dalle Impostazioni; vedi progettazione-fe.md §4)
 ├── router.tsx
 └── main.tsx
 e2e/                # test E2E Playwright (esclusi da Vitest)

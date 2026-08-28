@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Monitor, Moon, Sun } from 'lucide-react'
+import { Activity, LogOut, Monitor, Moon, Sun } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,7 @@ export default function SettingsPage() {
       <ThemeCard />
       <UsernameCard />
       <PasswordCard />
+      <ServerStatusCard />
       <DeleteAccountCard />
       <Card>
         <CardContent>
@@ -160,6 +161,26 @@ function UsernameCard() {
             </Button>
           </FieldGroup>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Collegamento alla pagina di monitoraggio del server (/status).
+function ServerStatusCard() {
+  const navigate = useNavigate()
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Stato server</CardTitle>
+        <CardDescription>CPU, memoria, disco e traffico HTTP del server.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" className="h-11 w-full" onClick={() => navigate('/status')}>
+          <Activity />
+          Apri stato server
+        </Button>
       </CardContent>
     </Card>
   )
