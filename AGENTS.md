@@ -43,6 +43,8 @@ src/
 │   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" contestuale (vedi sotto)
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
+│   #   (cliccabile con prop onClick: apre il dettaglio read-only)
+│   # BillDetailDialog.tsx: modale di sola lettura con il dettaglio di una spesa (quote con nomi risolti via resolveUsername)
 │   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
 │   # GlobalCreateBillDialog.tsx: creazione spesa dal FAB con scelta del contesto (gruppo o personale);
 │   #   accetta defaultContext/defaultFriendIds per preselezionare il contesto della pagina corrente

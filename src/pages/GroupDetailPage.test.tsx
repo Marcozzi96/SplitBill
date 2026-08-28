@@ -221,6 +221,20 @@ describe('GroupDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Elimina Cena' })).toBeTruthy()
   })
 
+  it('cliccando una spesa si apre il dettaglio in sola lettura', async () => {
+    mockApi({ bills: { content: [bill], totalPages: 1, number: 0 } })
+    renderDetail()
+
+    fireEvent.click(await screen.findByText('Cena'))
+
+    // Modale read-only: contesto, buyer, quote con nomi risolti, nessun campo del form.
+    expect(await screen.findByText(/10 ago 2026 · Gruppo/)).toBeTruthy()
+    expect(screen.getByText('Pagato da')).toBeTruthy()
+    expect(screen.getByText('Quote')).toBeTruthy()
+    expect(screen.getByText('luigi')).toBeTruthy()
+    expect(screen.queryByLabelText('Descrizione')).toBeNull()
+  })
+
   it('elimina una spesa dopo conferma', async () => {
     mockApi({ bills: { content: [bill], totalPages: 1, number: 0 } })
     mockedDelete.mockResolvedValue({ data: {} })

@@ -18,6 +18,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import FriendPicker from '@/components/FriendPicker'
 import BillCard from '@/components/BillCard'
+import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
 import { netBalanceClass } from '@/lib/money'
@@ -376,8 +377,14 @@ function GroupBills({
 }) {
   const [page, setPage] = useState(0)
   const billsQuery = useGroupBills(groupId, page)
+  const [viewingBill, setViewingBill] = useState<BillDTO | null>(null)
   const [editingBill, setEditingBill] = useState<BillDTO | null>(null)
   const [deletingBill, setDeletingBill] = useState<BillDTO | null>(null)
+
+  // Nomi delle quote nel modale di dettaglio (le transazioni hanno solo userId).
+  // I membri eliminati arrivano già come "UtenteEliminato"; fallback per userId ignoti.
+  const resolveUsername = (userId: number) =>
+    members.find((m) => m.userId === userId)?.username ?? 'UtenteEliminato'
 
   if (billsQuery.isPending) {
     return (
@@ -411,6 +418,7 @@ function GroupBills({
             <BillCard
               key={bill.billId}
               bill={bill}
+              onClick={() => setViewingBill(bill)}
               // Qualsiasi membro attivo del gruppo può modificare/eliminare le spese.
               actions={
                 <>
@@ -418,7 +426,10 @@ function GroupBills({
                     variant="outline"
                     size="icon"
                     aria-label={`Modifica ${bill.description}`}
-                    onClick={() => setEditingBill(bill)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingBill(bill)
+                    }}
                   >
                     <Pencil />
                   </Button>
@@ -426,7 +437,10 @@ function GroupBills({
                     variant="outline"
                     size="icon"
                     aria-label={`Elimina ${bill.description}`}
-                    onClick={() => setDeletingBill(bill)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeletingBill(bill)
+                    }}
                   >
                     <Trash2 />
                   </Button>
@@ -461,6 +475,14 @@ function GroupBills({
         </div>
       )}
 
+      <BillDetailDialog
+        bill={viewingBill}
+        open={viewingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setViewingBill(null)
+        }}
+        resolveUsername={resolveUsername}
+      />
       {editingBill && (
         <EditBillDialog
           key={editingBill.billId}

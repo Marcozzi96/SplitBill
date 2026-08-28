@@ -225,4 +225,26 @@ describe('FriendDetailPage', () => {
 
     await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith('/bills/1'))
   })
+
+  it('cliccando una spesa si apre il dettaglio in sola lettura', async () => {
+    renderPage()
+
+    fireEvent.click(await screen.findByText('Pizza'))
+
+    // Modale read-only: quote con nomi risolti, nessun campo del form.
+    expect(await screen.findByText('Pagato da')).toBeTruthy()
+    expect(screen.getByText('Quote')).toBeTruthy()
+    expect(screen.getAllByText(/10,00\s*€/)).toHaveLength(2)
+    expect(screen.queryByLabelText('Descrizione')).toBeNull()
+  })
+
+  it('i bottoni modifica/elimina non aprono il dettaglio', async () => {
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifica Pizza' }))
+
+    // Si apre solo il modale di modifica (campi del form), non quello di dettaglio.
+    expect(await screen.findByLabelText('Descrizione')).toBeTruthy()
+    expect(screen.queryByText('Quote')).toBeNull()
+  })
 })

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { Receipt } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatEuro } from '@/lib/money'
@@ -19,10 +19,34 @@ function formatDate(iso?: string) {
 // Card di una spesa: descrizione, importo, buyer e data. `actions` ospita
 // eventuali bottoni (modifica/elimina nel dettaglio gruppo).
 // L'icona distingue il contesto: verde = spesa personale, arancione = gruppo.
-export default function BillCard({ bill, actions }: { bill: BillDTO; actions?: ReactNode }) {
+// Con `onClick` la card apre il dettaglio read-only (clic o Enter/Spazio).
+export default function BillCard({
+  bill,
+  actions,
+  onClick,
+}: {
+  bill: BillDTO
+  actions?: ReactNode
+  onClick?: () => void
+}) {
   const isGroup = bill.groupId != null
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!onClick) return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick()
+    }
+  }
+
   return (
-    <Card>
+    <Card
+      className={cn(onClick && 'cursor-pointer')}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
       <CardContent className="flex items-center justify-between gap-2 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span

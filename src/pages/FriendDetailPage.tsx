@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BillCard from '@/components/BillCard'
+import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import { getApiErrorMessage } from '@/api/errors'
 import { useMyBills } from '@/api/hooks/bills'
@@ -25,6 +26,7 @@ export default function FriendDetailPage() {
   const billsQuery = useMyBills(page)
   const [editingBill, setEditingBill] = useState<BillDTO | null>(null)
   const [deletingBill, setDeletingBill] = useState<BillDTO | null>(null)
+  const [viewingBill, setViewingBill] = useState<BillDTO | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
 
   if (friendsQuery.isPending || billsQuery.isPending) {
@@ -91,6 +93,10 @@ export default function FriendDetailPage() {
     { userId: friend.userId, username: friend.username, email: friend.email },
   ]
 
+  // Nomi delle quote nel modale di dettaglio (le transazioni hanno solo userId).
+  const resolveUsername = (userId: number) =>
+    editMembers.find((m) => m.userId === userId)?.username ?? 'UtenteEliminato'
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
       <div className="flex items-center gap-2">
@@ -123,13 +129,17 @@ export default function FriendDetailPage() {
             <BillCard
               key={bill.billId}
               bill={bill}
+              onClick={() => setViewingBill(bill)}
               actions={
                 <>
                   <Button
                     variant="outline"
                     size="icon"
                     aria-label={`Modifica ${bill.description}`}
-                    onClick={() => setEditingBill(bill)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingBill(bill)
+                    }}
                   >
                     <Pencil />
                   </Button>
@@ -137,7 +147,10 @@ export default function FriendDetailPage() {
                     variant="outline"
                     size="icon"
                     aria-label={`Elimina ${bill.description}`}
-                    onClick={() => setDeletingBill(bill)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeletingBill(bill)
+                    }}
                   >
                     <Trash2 />
                   </Button>
@@ -167,6 +180,14 @@ export default function FriendDetailPage() {
         </div>
       )}
 
+      <BillDetailDialog
+        bill={viewingBill}
+        open={viewingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setViewingBill(null)
+        }}
+        resolveUsername={resolveUsername}
+      />
       {editingBill && (
         <EditBillDialog
           key={editingBill.billId}
