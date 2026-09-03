@@ -678,6 +678,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user/delete": {
         parameters: {
             query?: never;
@@ -843,11 +859,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
-            /** Format: int32 */
-            pageNumber?: number;
             /** Format: int32 */
             pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
+            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {
@@ -961,6 +977,8 @@ export interface components {
             /** Format: date */
             dataIngresso?: string;
             deleted?: boolean;
+            /** @enum {string} */
+            relazione?: "AMICI" | "RICHIESTA_INVIATA" | "RICHIESTA_RICEVUTA" | "RICHIESTA_RIFIUTATA" | "NESSUNA";
         };
         UserBalanceDTO: {
             /** Format: int64 */
@@ -987,6 +1005,66 @@ export interface components {
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
+        };
+        Cpu: {
+            /** Format: int32 */
+            cores?: number;
+            /** Format: double */
+            usagePercent?: number;
+        };
+        Disk: {
+            /** Format: int64 */
+            totalBytes?: number;
+            /** Format: int64 */
+            usedBytes?: number;
+            /** Format: int64 */
+            freeBytes?: number;
+            /** Format: double */
+            usagePercent?: number;
+        };
+        Http: {
+            /** Format: int64 */
+            requestsTotal?: number;
+            /** Format: int64 */
+            bytesInTotal?: number;
+            /** Format: int64 */
+            bytesOutTotal?: number;
+            /** Format: int64 */
+            requests2xx?: number;
+            /** Format: int64 */
+            requests4xx?: number;
+            /** Format: int64 */
+            requests5xx?: number;
+            /** Format: int64 */
+            totalTimeMs?: number;
+        };
+        Memory: {
+            /** Format: int64 */
+            totalBytes?: number;
+            /** Format: int64 */
+            usedBytes?: number;
+            /** Format: int64 */
+            freeBytes?: number;
+            /** Format: double */
+            usagePercent?: number;
+        };
+        Network: {
+            /** Format: int64 */
+            rxBytesTotal?: number;
+            /** Format: int64 */
+            txBytesTotal?: number;
+        };
+        ServerStatusDTO: {
+            /** Format: date-time */
+            timestamp?: string;
+            hostname?: string;
+            /** Format: int64 */
+            uptimeSeconds?: number;
+            cpu?: components["schemas"]["Cpu"];
+            memory?: components["schemas"]["Memory"];
+            disk?: components["schemas"]["Disk"];
+            network?: components["schemas"]["Network"];
+            http?: components["schemas"]["Http"];
         };
     };
     responses: never;
@@ -2410,6 +2488,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UserDTO"];
+                };
+            };
+        };
+    };
+    getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ServerStatusDTO"];
                 };
             };
         };

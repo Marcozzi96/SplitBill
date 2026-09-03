@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { ArrowLeft, LoaderCircle, LogOut, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,7 +25,7 @@ import { SettlementList, PaySettlementDialog } from '@/components/SettlementList
 import { netBalanceClass } from '@/lib/money'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
-import { useFriends } from '@/api/hooks/friends'
+import { useFriends, useSendFriendshipRequest } from '@/api/hooks/friends'
 import { useGroupBills } from '@/api/hooks/bills'
 import { useGroupBalance, useGroupSettlements } from '@/api/hooks/balance'
 import {
@@ -194,6 +195,8 @@ function GroupDetailBody({
       <MembersDialog
         members={members}
         isAdmin={isAdmin}
+        groupId={groupId}
+        groupName={name}
         open={membersOpen}
         onOpenChange={setMembersOpen}
         onAddClick={() => setAddOpen(true)}
@@ -315,52 +318,167 @@ function GroupSettlementsDialogBody({ settlements }: { settlements: UserSettleme
 function MembersDialog({
   members,
   isAdmin,
+  groupId,
+  groupName,
   open,
   onOpenChange,
   onAddClick,
 }: {
   members: components['schemas']['GroupMemberDTO'][]
   isAdmin: boolean
+  groupId: number
+  groupName: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onAddClick: () => void
 }) {
+  const { user } = useAuth()
+  const [requestTarget, setRequestTarget] = useState<GroupMemberDTO | null>(null)
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Membri ({members.length})</DialogTitle>
+            <DialogDescription>Partecipanti del gruppo.</DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <ul className="flex flex-col gap-2">
+              {members.map((member) => (
+                <li key={member.userId} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{member.username}</p>
+                    <p className="text-muted-foreground truncate text-sm">{member.email}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={
+                        member.role === 'ADMIN'
+                          ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
+                          : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
+                      }
+                    >
+                      {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
+                    </span>
+                    {member.userId !== user?.userId &&
+                      !member.deleted &&
+                      member.relazione === 'NESSUNA' && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label={`Invia richiesta di amicizia a ${member.username}`}
+                          onClick={() => setRequestTarget(member)}
+                        >
+                          <UserPlus />
+                        </Button>
+                      )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </DialogBody>
+          {isAdmin && (
+            <DialogFooter>
+              <Button variant="outline" className="w-full" onClick={onAddClick}>
+                <UserPlus />
+                Aggiungi
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {requestTarget && (
+        <MemberFriendRequestDialog
+          key={requestTarget.userId}
+          member={requestTarget}
+          groupId={groupId}
+          groupName={groupName}
+          open
+          onOpenChange={(open) => {
+            if (!open) setRequestTarget(null)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+// --- Dialog: richiesta di amicizia a un membro del gruppo ---
+
+function MemberFriendRequestDialog({
+  member,
+  groupId,
+  groupName,
+  open,
+  onOpenChange,
+}: {
+  member: GroupMemberDTO
+  groupId: number
+  groupName: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const queryClient = useQueryClient()
+  const sendMutation = useSendFriendshipRequest()
+  const [message, setMessage] = useState(
+    `Ciao, ci siamo conosciuti nel gruppo "${groupName}"!`,
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    sendMutation.mutate(
+      { name: member.username!, message },
+      {
+        onSuccess: () => {
+          toast.success('Richiesta di amicizia inviata')
+          // Aggiorna "relazione" del membro: il tastino UserPlus sparisce.
+          queryClient.invalidateQueries({ queryKey: ['groups', 'members', groupId] })
+          onOpenChange(false)
+        },
+        onError: (err) => setError(getApiErrorMessage(err)),
+      },
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Membri ({members.length})</DialogTitle>
-          <DialogDescription>Partecipanti del gruppo.</DialogDescription>
+          <DialogTitle>Aggiungi {member.username} agli amici</DialogTitle>
+          <DialogDescription>
+            Puoi modificare il messaggio che accompagna la richiesta.
+          </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <ul className="flex flex-col gap-2">
-            {members.map((member) => (
-              <li key={member.userId} className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{member.username}</p>
-                  <p className="text-muted-foreground truncate text-sm">{member.email}</p>
-                </div>
-                <span
-                  className={
-                    member.role === 'ADMIN'
-                      ? 'bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium'
-                      : 'bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs'
-                  }
-                >
-                  {member.role === 'ADMIN' ? 'Admin' : 'Membro'}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <form id="memberFriendRequestForm" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="memberFriendRequestMessage">Messaggio</FieldLabel>
+                <Input
+                  id="memberFriendRequestMessage"
+                  required
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+              </Field>
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
         </DialogBody>
-        {isAdmin && (
-          <DialogFooter>
-            <Button variant="outline" className="w-full" onClick={onAddClick}>
-              <UserPlus />
-              Aggiungi
-            </Button>
-          </DialogFooter>
-        )}
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="memberFriendRequestForm"
+            className="w-full"
+            disabled={!message.trim() || sendMutation.isPending}
+          >
+            {sendMutation.isPending ? 'Invio in corso…' : 'Invia richiesta'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
