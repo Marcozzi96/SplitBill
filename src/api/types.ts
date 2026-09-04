@@ -55,6 +55,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shopping-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Aggiorna lo stato di un articolo
+         * @description Toggle della checkbox "da acquistare": libero in entrambi i sensi.
+         */
+        put: operations["updateToBuy"];
+        post?: never;
+        /**
+         * Elimina un articolo
+         * @description Rimuove un articolo dalla lista della spesa del gruppo
+         */
+        delete: operations["deleteItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/groups/{groupId}": {
         parameters: {
             query?: never;
@@ -118,6 +142,26 @@ export interface paths {
         put?: never;
         /** Invia una richiesta di amicizia a un altro utente */
         post: operations["sendFriendshipRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shopping-items/new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aggiunge un articolo alla lista della spesa
+         * @description Crea un articolo da acquistare nel gruppo. Il nome viene trimmato e deve essere univoco nel gruppo (case-insensitive), anche rispetto agli articoli già acquistati.
+         */
+        post: operations["createItem"];
         delete?: never;
         options?: never;
         head?: never;
@@ -430,6 +474,26 @@ export interface paths {
             cookie?: never;
         };
         get: operations["prov"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shopping-items/group/{groupId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recupera la lista della spesa di un gruppo
+         * @description Restituisce gli articoli del gruppo con paginazione: prima quelli da acquistare, in fondo gli acquistati. Con toBuy si filtrano solo gli attivi (true) o solo gli acquistati (false).
+         */
+        get: operations["getItemsByGroup"];
         put?: never;
         post?: never;
         delete?: never;
@@ -770,6 +834,17 @@ export interface components {
             hasPassword?: boolean;
             deleted?: boolean;
         };
+        ShoppingItemDTO: {
+            /** Format: int64 */
+            itemId?: number;
+            /** Format: int64 */
+            groupId?: number;
+            name?: string;
+            note?: string;
+            toBuy?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         BillDTO: {
             /** Format: int64 */
             billId?: number;
@@ -781,6 +856,7 @@ export interface components {
             groupId?: number;
             amount?: number;
             buyer?: components["schemas"]["UserDTO"];
+            purchasedItems?: string;
             transactions?: components["schemas"]["TransactionDTO"][];
         };
         GroupDTO: {
@@ -842,8 +918,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqSenDTO"][];
@@ -853,17 +927,19 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageSize?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -886,8 +962,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqRecDTO"][];
@@ -897,6 +971,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageUserDTO: {
@@ -904,8 +980,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["UserDTO"][];
@@ -915,6 +989,26 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        PageShoppingItemDTO: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["ShoppingItemDTO"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PagePaymentDTO: {
@@ -922,8 +1016,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaymentDTO"][];
@@ -933,6 +1025,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageGroupDTO: {
@@ -940,8 +1034,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["GroupDTO"][];
@@ -951,6 +1043,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         UserSettlementDTO: {
@@ -993,8 +1087,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["BillDTO"][];
@@ -1004,6 +1096,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         Cpu: {
@@ -1203,6 +1297,98 @@ export interface operations {
                 content: {
                     "*/*": string;
                 };
+            };
+        };
+    };
+    updateToBuy: {
+        parameters: {
+            query: {
+                toBuy: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Articolo aggiornato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description Accesso non autorizzato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description Articolo non trovato */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+        };
+    };
+    deleteItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Articolo eliminato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Accesso non autorizzato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Articolo non trovato */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1493,6 +1679,57 @@ export interface operations {
             };
         };
     };
+    createItem: {
+        parameters: {
+            query: {
+                groupId: number;
+                name: string;
+                note?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Articolo creato con successo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description Dati non validi o articolo già presente in lista */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description Accesso non autorizzato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemDTO"];
+                };
+            };
+        };
+    };
     getPayments: {
         parameters: {
             query?: {
@@ -1697,6 +1934,7 @@ export interface operations {
                 notes: string;
                 groupId?: number;
                 buyerId?: number;
+                shoppingItemIds?: number[];
             };
             header?: never;
             path?: never;
@@ -2123,6 +2361,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    getItemsByGroup: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                toBuy?: boolean;
+            };
+            header?: never;
+            path: {
+                groupId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista articoli restituita */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageShoppingItemDTO"];
+                };
+            };
+            /** @description Accesso non autorizzato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageShoppingItemDTO"];
+                };
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageShoppingItemDTO"];
                 };
             };
         };

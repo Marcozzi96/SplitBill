@@ -1,4 +1,4 @@
-import { Receipt, StickyNote, Users } from 'lucide-react'
+import { Receipt, ShoppingCart, StickyNote, Users } from 'lucide-react'
 import {
   Dialog,
   DialogBody,
@@ -111,6 +111,15 @@ export default function BillDetailDialog({
                   Note
                 </p>
                 <p className="mt-1 text-sm whitespace-pre-wrap">{bill.notes}</p>
+              </div>
+            )}
+            {bill.purchasedItems && (
+              <div className="bg-muted/60 rounded-xl p-3">
+                <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                  <ShoppingCart aria-hidden className="size-4" />
+                  Articoli acquistati
+                </p>
+                <p className="mt-1 text-sm">{bill.purchasedItems}</p>
               </div>
             )}
             {transactions.length > 0 && (

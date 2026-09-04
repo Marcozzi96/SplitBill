@@ -1,7 +1,22 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BillForm, { type BillFormValues } from './BillForm'
 import { AuthContext, type AuthContextValue } from '@/auth/auth-context'
+import { api } from '@/api/client'
 import type { components } from '@/api/types'
+
+vi.mock('@/api/client', () => ({
+  TOKEN_KEY: 'splitbill_token',
+  api: {
+    post: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
+  },
+}))
+
+const mockedGet = vi.mocked(api.get)
 
 type GroupMemberDTO = components['schemas']['GroupMemberDTO']
 type BillDTO = components['schemas']['BillDTO']
@@ -32,20 +47,24 @@ function renderForm(
   props: {
     bill?: BillDTO
     members?: GroupMemberDTO[]
+    groupId?: number
     onSubmit?: (values: BillFormValues) => void
   } = {},
 ) {
   const onSubmit = props.onSubmit ?? vi.fn()
   render(
-    <AuthContext.Provider value={authValue}>
-      <BillForm
-        members={props.members ?? members}
-        bill={props.bill}
-        submitLabel="Crea spesa"
-        isPending={false}
-        onSubmit={onSubmit}
-      />
-    </AuthContext.Provider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <AuthContext.Provider value={authValue}>
+        <BillForm
+          members={props.members ?? members}
+          bill={props.bill}
+          groupId={props.groupId}
+          submitLabel="Crea spesa"
+          isPending={false}
+          onSubmit={onSubmit}
+        />
+      </AuthContext.Provider>
+    </QueryClientProvider>,
   )
   return onSubmit
 }
@@ -95,6 +114,7 @@ describe('BillForm', () => {
       amountCents: 1000,
       buyerId: 1,
       sharesCents: { 1: 1000 },
+      shoppingItemIds: [],
     })
   })
 
@@ -180,5 +200,73 @@ describe('BillForm', () => {
     expect(checkbox).toHaveProperty('checked', true)
     expect(checkbox).toHaveProperty('disabled', false)
     expect(screen.getByLabelText('Quota UtenteEliminato')).toHaveProperty('value', '4,00')
+  })
+})
+
+
+// Sezione "Articoli acquistati": visibile solo in creazione con groupId.
+describe('BillForm — articoli della lista spesa', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function mockItems(content: object[]) {
+    mockedGet.mockResolvedValue({ data: { content, totalPages: 1, number: 0 } })
+  }
+
+  it('senza groupId la sezione non compare e non parte nessuna query', () => {
+    renderForm()
+
+    expect(screen.queryByText('Articoli acquistati')).toBeNull()
+    expect(mockedGet).not.toHaveBeenCalled()
+  })
+
+  it('con groupId elenca gli articoli attivi e li passa in shoppingItemIds', async () => {
+    mockItems([
+      { itemId: 10, groupId: 5, name: 'Latte', note: 'x6', toBuy: true },
+      { itemId: 11, groupId: 5, name: 'Uova', toBuy: true },
+    ])
+    const onSubmit = renderForm({ groupId: 5 })
+
+    expect(await screen.findByText('Articoli acquistati')).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/shopping-items/group/5', {
+      params: { page: 0, size: 100, toBuy: true },
+    })
+
+    fireEvent.click(screen.getByLabelText('Acquistato Latte'))
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Spesa' } })
+    fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Dividi equamente' }))
+    submit()
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ shoppingItemIds: [10] }),
+    )
+  })
+
+  it('lista vuota: la sezione non si mostra', async () => {
+    mockItems([])
+    renderForm({ groupId: 5 })
+
+    // Attende che la query risponda (lo spinner sparisce) prima dell'assert.
+    await screen.findByLabelText('Partecipa mario')
+    await vi.waitFor(() => expect(mockedGet).toHaveBeenCalled())
+    expect(screen.queryByText('Articoli acquistati')).toBeNull()
+  })
+
+  it('in modifica la sezione non compare nemmeno con groupId', async () => {
+    mockItems([{ itemId: 10, groupId: 5, name: 'Latte', toBuy: true }])
+    const bill: BillDTO = {
+      billId: 1,
+      description: 'Cinema',
+      amount: 10,
+      notes: '',
+      buyer: { userId: 1, username: 'mario' },
+      transactions: [{ userId: 1, amount: 0 }],
+    }
+    renderForm({ bill, groupId: 5 })
+
+    expect(screen.getByLabelText('Descrizione')).toHaveProperty('value', 'Cinema')
+    expect(screen.queryByText('Articoli acquistati')).toBeNull()
   })
 })

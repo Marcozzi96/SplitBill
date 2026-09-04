@@ -37,6 +37,7 @@ function mockApi({
   bills = { content: [], totalPages: 0, number: 0 },
   balanceData = balance,
   groupSettlements = [],
+  shoppingItems = { content: [], totalPages: 0, number: 0 },
 }: {
   membersData?: object[]
   friends?: object
@@ -44,6 +45,7 @@ function mockApi({
   bills?: object
   balanceData?: object
   groupSettlements?: object[]
+  shoppingItems?: object
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/groups/5') return Promise.resolve({ data: group })
@@ -53,6 +55,7 @@ function mockApi({
     if (url === '/groups/5/settlements') return Promise.resolve({ data: groupSettlements })
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/bills/group/5') return Promise.resolve({ data: bills })
+    if (url === '/shopping-items/group/5') return Promise.resolve({ data: shoppingItems })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
@@ -107,6 +110,24 @@ describe('GroupDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'Elimina gruppo' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Modifica gruppo' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Esci dal gruppo' })).toBeTruthy()
+    // La lista della spesa è visibile a tutti i membri.
+    expect(screen.getByRole('button', { name: 'Lista della spesa' })).toBeTruthy()
+  })
+
+  it('apre la lista della spesa del gruppo', async () => {
+    mockApi({
+      shoppingItems: {
+        content: [{ itemId: 1, groupId: 5, name: 'Latte', toBuy: true }],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderDetail()
+
+    await screen.findByRole('heading', { name: 'Vacanze' })
+    fireEvent.click(screen.getByRole('button', { name: 'Lista della spesa' }))
+
+    expect(await screen.findByText('Latte')).toBeTruthy()
   })
 
   it('modifica nome e descrizione come query params', async () => {

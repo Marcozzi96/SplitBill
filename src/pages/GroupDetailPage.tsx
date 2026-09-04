@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { ArrowLeft, LoaderCircle, LogOut, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, LogOut, Pencil, Plus, ShoppingCart, Trash2, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,6 +21,7 @@ import FriendPicker from '@/components/FriendPicker'
 import BillCard from '@/components/BillCard'
 import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
+import ShoppingListDialog from '@/components/ShoppingListDialog'
 import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
 import { netBalanceClass } from '@/lib/money'
 import { getApiErrorMessage } from '@/api/errors'
@@ -121,6 +122,7 @@ function GroupDetailBody({
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [createBillOpen, setCreateBillOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [shoppingOpen, setShoppingOpen] = useState(false)
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
@@ -148,6 +150,14 @@ function GroupDetailBody({
           </div>
           {/* Azioni sul gruppo: solo icone, sulla stessa riga */}
           <div className="flex shrink-0 gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Lista della spesa"
+              onClick={() => setShoppingOpen(true)}
+            >
+              <ShoppingCart />
+            </Button>
             {isAdmin && (
               <>
                 <Button
@@ -222,6 +232,11 @@ function GroupDetailBody({
       />
       <DeleteGroupDialog groupId={groupId} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <LeaveGroupDialog groupId={groupId} open={leaveOpen} onOpenChange={setLeaveOpen} />
+      <ShoppingListDialog
+        groupId={groupId}
+        open={shoppingOpen}
+        onOpenChange={setShoppingOpen}
+      />
     </div>
   )
 }

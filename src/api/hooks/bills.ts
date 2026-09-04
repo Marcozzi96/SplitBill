@@ -61,6 +61,8 @@ function useInvalidateBills() {
     // nel dettaglio) e la radice 'balance' usata dallo Sprint 6.
     queryClient.invalidateQueries({ queryKey: ['groups'] })
     queryClient.invalidateQueries({ queryKey: ['balance'] })
+    // La creazione può marcare articoli della lista spesa come acquistati.
+    queryClient.invalidateQueries({ queryKey: ['shopping'] })
   }
 }
 
@@ -68,7 +70,12 @@ export function useCreateBill() {
   const invalidate = useInvalidateBills()
   return useMutation({
     // groupId opzionale: senza gruppo la spesa è personale (es. tra amici).
-    mutationFn: async ({ groupId, ...input }: BillInput & { groupId?: number }) =>
+    // shoppingItemIds (param ripetuto): articoli della lista spesa acquistati.
+    mutationFn: async ({
+      groupId,
+      shoppingItemIds,
+      ...input
+    }: BillInput & { groupId?: number; shoppingItemIds?: number[] }) =>
       (
         await api.post<BillDTO>('/bills/new', input.shares, {
           params: {
@@ -77,7 +84,13 @@ export function useCreateBill() {
             notes: input.notes,
             ...(groupId != null ? { groupId } : {}),
             ...(input.buyerId != null ? { buyerId: input.buyerId } : {}),
+            ...(shoppingItemIds && shoppingItemIds.length > 0 ? { shoppingItemIds } : {}),
           },
+          // Param ripetuto (shoppingItemIds=1&shoppingItemIds=2), non con []:
+          // è il formato atteso da Spring per List<Long>. Solo quando serve.
+          ...(shoppingItemIds && shoppingItemIds.length > 0
+            ? { paramsSerializer: { indexes: null } }
+            : {}),
         })
       ).data,
     onSuccess: invalidate,

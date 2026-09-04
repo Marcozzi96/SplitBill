@@ -7,6 +7,7 @@ import {
   DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -78,6 +79,7 @@ export default function GlobalCreateBillDialog({
         notes: values.notes,
         amount: values.amountCents / 100,
         buyerId: values.buyerId,
+        shoppingItemIds: values.shoppingItemIds,
         shares: Object.fromEntries(
           Object.entries(values.sharesCents).map(([userId, cents]) => [userId, cents / 100]),
         ),
@@ -153,6 +155,7 @@ export default function GlobalCreateBillDialog({
               <BillForm
                 key={`personal-${friendIds.join(',')}`}
                 members={personalMembers}
+                formId="global-bill-form"
                 submitLabel="Crea spesa"
                 isPending={createMutation.isPending}
                 error={error}
@@ -169,6 +172,20 @@ export default function GlobalCreateBillDialog({
             />
           )}
         </DialogBody>
+        {/* Footer fisso: il bottone submit sta fuori dallo scroll e punta al
+            form via attributo form. Visibile solo quando un form è presente. */}
+        {(groupId != null || friendIds.length > 0) && (
+          <DialogFooter>
+            <Button
+              type="submit"
+              form="global-bill-form"
+              className="w-full"
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? 'Salvataggio in corso…' : 'Crea spesa'}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -211,6 +228,8 @@ function GroupBillForm({
   return (
     <BillForm
       members={membersQuery.data ?? []}
+      groupId={groupId}
+      formId="global-bill-form"
       submitLabel="Crea spesa"
       isPending={isPending}
       error={error}

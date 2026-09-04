@@ -60,6 +60,16 @@ describe('BillDetailDialog', () => {
     expect(screen.queryByText('Note')).toBeNull()
   })
 
+  it('mostra gli articoli acquistati solo se presenti', () => {
+    const { unmount } = renderDialog()
+    expect(screen.queryByText('Articoli acquistati')).toBeNull()
+    unmount()
+
+    renderDialog({ purchasedItems: 'Latte, Uova (x6)' })
+    expect(screen.getByText('Articoli acquistati')).toBeTruthy()
+    expect(screen.getByText('Latte, Uova (x6)')).toBeTruthy()
+  })
+
   it('mostra le quote con i nomi risolti e gli importi positivi', () => {
     renderDialog()
 

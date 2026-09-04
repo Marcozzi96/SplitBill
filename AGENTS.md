@@ -4,7 +4,7 @@ Istruzioni per agenti AI e sviluppatori che lavorano su questo repository.
 
 ## Contesto
 
-Frontend di **SplitBill** (PWA React per dividere spese tra amici e gruppi). Il backend (Spring Boot, repository `javaWS`) è completo e deployato: qui si consumano solo le API esistenti.
+Frontend di **SplitBill** (PWA React per dividere spese tra amici e gruppi). Il backend è Spring Boot (repository `javaWS`); i tipi API si rigenerano da OpenAPI con `npm run gen:types` (richiede il backend in esecuzione su `:8080`).
 
 - Documento di progettazione: `progettazione-fe.md` (contratti API, DTO, flussi — fonte di verità)
 - Piano di sviluppo: `piano_di_sviluppo.md` (8 sprint, dipendenze, rischi)
@@ -36,13 +36,14 @@ src/
 │   ├── client.ts   # istanza axios + interceptor JWT/401
 │   ├── types.ts    # GENERATO da openapi-typescript — non editare a mano
 │   ├── statusTypes.ts  # tipi di GET /api/status (definiti a mano, endpoint fuori da OpenAPI)
-│   └── hooks/      # useLogin, useFriends, useGroups, useBills, useMyBalance, usePayments, useServerStatus, useLatestCommits (GitHub, via fetch nativo), ...
+│   └── hooks/      # useLogin, useFriends, useGroups, useBills, useMyBalance, usePayments, useServerStatus, useLatestCommits (GitHub, via fetch nativo), shopping.ts (lista della spesa: useGroupShoppingItems, useAddShoppingItem, useToggleShoppingItem, useDeleteShoppingItem), ...
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
 │   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" contestuale (vedi sotto)
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
+│   #   (in creazione di spesa di gruppo anche la sezione "Articoli acquistati" dalla lista della spesa)
 │   #   (cliccabile con prop onClick: apre il dettaglio read-only)
 │   # BillDetailDialog.tsx: modale di sola lettura con il dettaglio di una spesa (quote con nomi risolti via resolveUsername)
 │   # BillDialogs.tsx: modali creazione/modifica/eliminazione spesa (usate in dettaglio gruppo e amico)
@@ -50,6 +51,8 @@ src/
 │   #   accetta defaultContext/defaultFriendIds per preselezionare il contesto della pagina corrente
 │   # SendFriendRequestDialog.tsx: nuova richiesta di amicizia (pagina Amici e FAB su /friends)
 │   # CreateGroupDialog.tsx: creazione gruppo (pagina Gruppi e FAB su /groups)
+│   # ShoppingListDialog.tsx: lista della spesa del gruppo (dettaglio gruppo, tutti i membri): checkbox toBuy,
+│   #   eliminazione, aggiunta inline (nome + nota), paginata
 │   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Home, dettaglio gruppo; importo pre-compilato al massimo del debito);
 │   #   il click su un settlement porta al gruppo (se di gruppo) o al dettaglio amico (se personale)
 │   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
@@ -78,6 +81,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400).
 - **FAB "+"**: contestuale alla rotta (in `AppLayout.tsx`) — Home/Impostazioni: nuova spesa con scelta del contesto; `/friends`: nuova richiesta di amicizia; `/friends/:userId`: nuova spesa personale con quell'amico preselezionato; `/groups`: nuovo gruppo; `/groups/:groupId`: nuova spesa con quel gruppo preselezionato.
 - **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`, `buyerId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`. `groupId` è opzionale in creazione: senza gruppo la spesa è personale (tra amici) e si elenca nel dettaglio amico filtrando `/bills/getMyBills`. `buyerId` è opzionale ("Pagato da"): default l'utente autenticato in creazione, il buyer attuale in modifica.
+- **Lista della spesa**: endpoint `/shopping-items` (riservati ai membri attivi del gruppo): `GET /shopping-items/group/{groupId}` (paginata, filtro `toBuy` opzionale, ordinata attivi-prima), `POST /shopping-items/new` (query params `groupId`, `name`, `note` opz.; 400 "Articolo già presente in lista" su duplicato case-insensitive), `PUT /shopping-items/{id}?toBuy=` (toggle), `DELETE /shopping-items/{id}`. In creazione spesa, `POST /bills/new` accetta il param ripetuto opzionale `shoppingItemIds` (serializzato senza `[]` via `paramsSerializer: { indexes: null }`): gli articoli vengono marcati come acquistati e sulla spesa viene salvato lo snapshot testuale `purchasedItems` (nuovo campo di `BillDTO`, es. "Latte, Uova (x6)", mostrato in `BillDetailDialog`). Modifica/eliminazione spesa non retroagiscono sulla lista.
 - **Paginazione**: `?page=0&size=20`, risposta `Page<T>` Spring (`content`, `totalElements`, `totalPages`, `number`, ...). Ordinamenti lato server: spese e rimborsi dal più recente (`date`/`id` desc), lista amici alfabetica per username.
 - **Uscita da un gruppo**: i debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali (settlement con `groupId` null).
 - **Utenti eliminati**: `DELETE /user/delete` (hook `useDeleteUser`, card "Elimina account" in Impostazioni con conferma testuale "ELIMINA" e avviso sui debiti/crediti aperti → logout + redirect a `/login`). Nei DTO arrivano come `username: "UtenteEliminato"`, `email: null`, `deleted: true`: nei settlement (`SettlementList`) mostrano l'icona `TriangleAlert` → popup "Utente eliminato"; su `CREDIT` il popup offre "Dimentica il debito" (`useForgiveDebt` → `POST /payments/forgive?payerId=&groupId=`). Non sono selezionabili nelle nuove spese (`BillForm` disabilita i membri `deleted`; in modifica restano se già partecipanti). La lista amici li esclude già lato backend.

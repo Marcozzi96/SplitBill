@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
+import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { formatEuro, parseAmountToCents, splitEqually } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
+import { useGroupShoppingItems } from '@/api/hooks/shopping'
 import type { components } from '@/api/types'
 
 type GroupMemberDTO = components['schemas']['GroupMemberDTO']
@@ -18,6 +20,8 @@ export interface BillFormValues {
   buyerId: number
   /** userId -> quota in centesimi (membri deselezionati o con quota zero/vuota esclusi) */
   sharesCents: Record<number, number>
+  /** Articoli della lista spesa marcati come acquistati con questa spesa */
+  shoppingItemIds: number[]
 }
 
 function centsToInput(cents: number): string {
@@ -48,6 +52,8 @@ function initialSharesCents(bill: BillDTO): Record<number, number> {
 export default function BillForm({
   members,
   bill,
+  groupId,
+  formId,
   submitLabel,
   isPending,
   error,
@@ -56,6 +62,12 @@ export default function BillForm({
   members: GroupMemberDTO[]
   /** Se presente, il form è in modifica e viene precompilato dalla spesa. */
   bill?: BillDTO
+  /** Solo in creazione: mostra la sezione "Articoli acquistati" del gruppo. */
+  groupId?: number
+  /** Se presente, il bottone submit NON è renderizzato qui: lo fornisce il
+      DialogFooter del chiamante con form={formId} (footer fisso, fuori dallo
+      scroll). Senza formId il bottone resta in coda al form (uso standalone). */
+  formId?: string
   submitLabel: string
   isPending: boolean
   error?: string | null
@@ -98,6 +110,17 @@ export default function BillForm({
   const [buyerId, setBuyerId] = useState<number | null>(
     bill?.buyer?.userId ?? user?.userId ?? null,
   )
+  // Articoli della lista spesa spuntati come acquistati con questa spesa.
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set())
+
+  function toggleItem(itemId: number) {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
 
   const amountCents = parseAmountToCents(amount)
   // Solo i partecipanti selezionati entrano nel conteggio delle quote.
@@ -178,13 +201,20 @@ export default function BillForm({
     for (const s of parsedShares) {
       if (s.cents !== null && s.cents > 0) sharesCents[s.userId] = s.cents
     }
-    onSubmit({ description: description.trim(), notes: notes.trim(), amountCents, buyerId, sharesCents })
+    onSubmit({
+      description: description.trim(),
+      notes: notes.trim(),
+      amountCents,
+      buyerId,
+      sharesCents,
+      shoppingItemIds: [...selectedItemIds],
+    })
   }
 
   const remainingCents = amountCents !== null ? amountCents - sumCents : null
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form id={formId} onSubmit={handleSubmit}>
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="billDescription">Descrizione</FieldLabel>
@@ -234,7 +264,7 @@ export default function BillForm({
               Dividi equamente
             </Button>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
             {members.map((member) => {
               const selected = selectedIds.has(member.userId!)
               const locked = isLocked(member)
@@ -285,11 +315,78 @@ export default function BillForm({
           )}
         </Field>
 
+        {/* Solo in creazione di una spesa di gruppo: spunta gli articoli della
+            lista spesa acquistati con questa spesa. */}
+        {groupId != null && !bill && (
+          <ShoppingItemsField
+            groupId={groupId}
+            selectedIds={selectedItemIds}
+            onToggle={toggleItem}
+          />
+        )}
+
         {(localError ?? error) && <FieldError>{localError ?? error}</FieldError>}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Salvataggio in corso…' : submitLabel}
-        </Button>
+        {/* Con formId il bottone submit sta nel DialogFooter del chiamante. */}
+        {formId == null && (
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? 'Salvataggio in corso…' : submitLabel}
+          </Button>
+        )}
       </FieldGroup>
     </form>
+  )
+}
+
+// Sezione "Articoli acquistati": elenca gli articoli ancora da comprare del
+// gruppo (query propria, così BillForm resta usabile senza groupId). Se la
+// lista è vuota la sezione non si mostra.
+function ShoppingItemsField({
+  groupId,
+  selectedIds,
+  onToggle,
+}: {
+  groupId: number
+  selectedIds: Set<number>
+  onToggle: (itemId: number) => void
+}) {
+  const itemsQuery = useGroupShoppingItems(groupId, 0, true, 100)
+
+  if (itemsQuery.isPending) {
+    return (
+      <div className="flex justify-center py-2">
+        <LoaderCircle className="text-muted-foreground size-5 animate-spin" />
+      </div>
+    )
+  }
+
+  const items = itemsQuery.data?.content ?? []
+  if (itemsQuery.isError || items.length === 0) return null
+
+  return (
+    <Field>
+      <FieldLabel>Articoli acquistati</FieldLabel>
+      <div className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
+        {items.map((item) => (
+          <label
+            key={item.itemId}
+            className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2"
+          >
+            <input
+              type="checkbox"
+              className="size-4 shrink-0"
+              checked={selectedIds.has(item.itemId!)}
+              onChange={() => onToggle(item.itemId!)}
+              aria-label={`Acquistato ${item.name}`}
+            />
+            <span className="min-w-0">
+              <span className="block truncate text-sm">{item.name}</span>
+              {item.note && (
+                <span className="text-muted-foreground block truncate text-xs">{item.note}</span>
+              )}
+            </span>
+          </label>
+        ))}
+      </div>
+    </Field>
   )
 }

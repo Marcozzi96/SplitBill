@@ -48,6 +48,7 @@ export function CreateBillDialog({
         notes: values.notes,
         amount: values.amountCents / 100,
         buyerId: values.buyerId,
+        shoppingItemIds: values.shoppingItemIds,
         shares: Object.fromEntries(
           Object.entries(values.sharesCents).map(([userId, cents]) => [userId, cents / 100]),
         ),
@@ -74,12 +75,24 @@ export function CreateBillDialog({
         <DialogBody>
           <BillForm
             members={members}
+            groupId={groupId}
+            formId="create-bill-form"
             submitLabel="Crea spesa"
             isPending={createMutation.isPending}
             error={error}
             onSubmit={handleSubmit}
           />
         </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="create-bill-form"
+            className="w-full"
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending ? 'Salvataggio in corso…' : 'Crea spesa'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -136,12 +149,23 @@ export function EditBillDialog({
           <BillForm
             members={members}
             bill={bill}
+            formId="edit-bill-form"
             submitLabel="Salva"
             isPending={updateMutation.isPending}
             error={error}
             onSubmit={handleSubmit}
           />
         </DialogBody>
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="edit-bill-form"
+            className="w-full"
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? 'Salvataggio in corso…' : 'Salva'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

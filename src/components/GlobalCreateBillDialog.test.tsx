@@ -49,6 +49,8 @@ function mockApi() {
           { userId: 2, username: 'luigi' },
         ],
       })
+    if (url === '/shopping-items/group/5')
+      return Promise.resolve({ data: { content: [], totalPages: 0, number: 0 } })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
