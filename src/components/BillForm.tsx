@@ -3,7 +3,8 @@ import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { formatEuro, parseAmountToCents, splitEqually } from '@/lib/money'
+import { MoneyInput } from '@/components/MoneyInput'
+import { centsToAmountInput, formatEuro, resolveAmountToCents, splitEqually } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
 import { useGroupShoppingItems } from '@/api/hooks/shopping'
@@ -22,10 +23,6 @@ export interface BillFormValues {
   sharesCents: Record<number, number>
   /** Articoli della lista spesa marcati come acquistati con questa spesa */
   shoppingItemIds: number[]
-}
-
-function centsToInput(cents: number): string {
-  return (cents / 100).toFixed(2).replace('.', ',')
 }
 
 // Ricostruisce le quote (positive, in centesimi) dalle transazioni della spesa.
@@ -77,12 +74,12 @@ export default function BillForm({
   const [description, setDescription] = useState(bill?.description ?? '')
   const [notes, setNotes] = useState(bill?.notes ?? '')
   const [amount, setAmount] = useState(
-    bill?.amount != null ? centsToInput(Math.round(bill.amount * 100)) : '',
+    bill?.amount != null ? centsToAmountInput(Math.round(bill.amount * 100)) : '',
   )
   const [shares, setShares] = useState<Record<number, string>>(() => {
     const initial: Record<number, string> = {}
     for (const [userId, cents] of Object.entries(bill ? initialSharesCents(bill) : {})) {
-      initial[Number(userId)] = centsToInput(cents)
+      initial[Number(userId)] = centsToAmountInput(cents)
     }
     return initial
   })
@@ -122,13 +119,13 @@ export default function BillForm({
     })
   }
 
-  const amountCents = parseAmountToCents(amount)
+  const amountCents = resolveAmountToCents(amount)
   // Solo i partecipanti selezionati entrano nel conteggio delle quote.
   const parsedShares = members
     .filter((m) => selectedIds.has(m.userId!))
     .map((m) => ({
       userId: m.userId!,
-      cents: parseAmountToCents(shares[m.userId!] ?? ''),
+      cents: resolveAmountToCents(shares[m.userId!] ?? ''),
       raw: shares[m.userId!] ?? '',
     }))
   const sumCents = parsedShares.reduce((sum, s) => sum + (s.cents ?? 0), 0)
@@ -160,7 +157,7 @@ export default function BillForm({
     const parts = splitEqually(amountCents, selectedMembers.length)
     const next: Record<number, string> = {}
     selectedMembers.forEach((m, i) => {
-      next[m.userId!] = centsToInput(parts[i])
+      next[m.userId!] = centsToAmountInput(parts[i])
     })
     setShares(next)
   }
@@ -227,13 +224,12 @@ export default function BillForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="billAmount">Importo (€)</FieldLabel>
-          <Input
+          <MoneyInput
             id="billAmount"
             required
-            inputMode="decimal"
             placeholder="0,00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={setAmount}
           />
         </Field>
         <Field>
@@ -289,15 +285,15 @@ export default function BillForm({
                       {member.userId === user?.userId && ' (Tu)'}
                     </span>
                   </label>
-                  <Input
+                  <MoneyInput
+                    wrapperClassName="shrink-0"
                     className="w-28 text-right"
-                    inputMode="decimal"
                     placeholder="0,00"
                     aria-label={`Quota ${member.username}`}
                     disabled={!selected}
                     value={shares[member.userId!] ?? ''}
-                    onChange={(e) =>
-                      setShares((prev) => ({ ...prev, [member.userId!]: e.target.value }))
+                    onChange={(v) =>
+                      setShares((prev) => ({ ...prev, [member.userId!]: v }))
                     }
                   />
                 </div>

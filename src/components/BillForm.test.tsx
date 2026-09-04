@@ -180,6 +180,42 @@ describe('BillForm', () => {
     expect(within(buyerSelect).queryByRole('option', { name: 'UtenteEliminato' })).toBeNull()
   })
 
+  it('accetta espressioni nell’importo e le valuta al submit', () => {
+    const onSubmit = renderForm()
+
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Pizza' } })
+    fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '10 + 2,50' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Dividi equamente' }))
+    submit()
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ amountCents: 1250 }),
+    )
+  })
+
+  it('il tastierino custom digita nell’importo al focus', () => {
+    renderForm()
+
+    fireEvent.focus(screen.getByLabelText('Importo (€)'))
+    fireEvent.click(screen.getByRole('button', { name: '4' }))
+    fireEvent.click(screen.getByRole('button', { name: '2' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Virgola' }))
+    fireEvent.click(screen.getByRole('button', { name: '5' }))
+
+    expect(screen.getByLabelText('Importo (€)')).toHaveProperty('value', '42,5')
+  })
+
+  it('"=" del tastierino risolve l’espressione nel campo importo', () => {
+    renderForm()
+
+    const amount = screen.getByLabelText('Importo (€)')
+    fireEvent.focus(amount)
+    fireEvent.change(amount, { target: { value: '12,50 + 3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Uguale' }))
+
+    expect(amount).toHaveProperty('value', '15,50')
+  })
+
   it('in modifica un eliminato con quota preesistente resta selezionato ed editabile', () => {
     // Spesa da 10€ pagata da mario: 4€ a carico dell'eliminato, 6€ di luigi.
     const bill: BillDTO = {

@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { formatEuro, parseAmountToCents } from '@/lib/money'
+import { MoneyInput } from '@/components/MoneyInput'
+import { formatEuro, resolveAmountToCents } from '@/lib/money'
 import { getApiErrorMessage } from '@/api/errors'
 import { useCreatePayment, useForgiveDebt } from '@/api/hooks/balance'
 import type { components } from '@/api/types'
@@ -219,7 +220,7 @@ export function PaySettlementDialog({
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
-    const amountCents = parseAmountToCents(amount)
+    const amountCents = resolveAmountToCents(amount)
     if (amountCents === null || amountCents <= 0) {
       setError('Inserisci un importo valido (es. 42,50)')
       return
@@ -260,12 +261,11 @@ export function PaySettlementDialog({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="payAmount">Importo (€)</FieldLabel>
-                <Input
+                <MoneyInput
                   id="payAmount"
                   required
-                  inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
                 />
               </Field>
               <Field>

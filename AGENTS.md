@@ -58,6 +58,9 @@ src/
 │   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
 │   # GoogleLoginButton.tsx: bottone "Continua con Google" (Login/Register), visibile solo se VITE_GOOGLE_CLIENT_ID è valorizzata
 │   # ReleasesCard.tsx: card "Ultimi rilasci" della StatusPage (ultimi 5 commit di main dei repo GitHub backend/frontend)
+│   # MoneyInput.tsx + NumericKeypad.tsx: input monetario con tastierino "calcolatrice" custom stile Satispay,
+│   #   mostrato come pop-up ancorato al campo (portal su body, flip sopra/sotto). Tasti: cifre 1-2-3 in alto,
+│   #   ", 0 ⌫" in fondo, operatori + − × ÷ rossi a destra; riga finale "( ) = Fine".
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, bytes.ts per quantità di byte, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; StatusPage = monitoraggio server su /status, raggiungibile dalle Impostazioni; vedi progettazione-fe.md §4)
 ├── router.tsx
@@ -78,7 +81,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **401**: gestito dall'interceptor in `src/api/client.ts` (svuota token, redirect a `/login`). Non duplicare la logica.
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".
 - **Errori API**: body `{ timestamp, status, error, message }` → mostrare `message` all'utente (già in italiano).
-- **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400).
+- **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400). Tutti gli input monetari usano `MoneyInput` (`inputMode="none"` + tastierino custom in pop-up al focus, con portal su body perché il Dialog ha `overflow-hidden` e transform); i campi accettano espressioni anche con parentesi ("(12,50 + 3) × 2"), risolte da "=" / blur / submit via `resolveAmountToCents` in `lib/money.ts` (mai `parseAmountToCents` su input utente).
 - **FAB "+"**: contestuale alla rotta (in `AppLayout.tsx`) — Home/Impostazioni: nuova spesa con scelta del contesto; `/friends`: nuova richiesta di amicizia; `/friends/:userId`: nuova spesa personale con quell'amico preselezionato; `/groups`: nuovo gruppo; `/groups/:groupId`: nuova spesa con quel gruppo preselezionato.
 - **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`, `buyerId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`. `groupId` è opzionale in creazione: senza gruppo la spesa è personale (tra amici) e si elenca nel dettaglio amico filtrando `/bills/getMyBills`. `buyerId` è opzionale ("Pagato da"): default l'utente autenticato in creazione, il buyer attuale in modifica.
 - **Lista della spesa**: endpoint `/shopping-items` (riservati ai membri attivi del gruppo): `GET /shopping-items/group/{groupId}` (paginata, filtro `toBuy` opzionale, ordinata attivi-prima), `POST /shopping-items/new` (query params `groupId`, `name`, `note` opz.; 400 "Articolo già presente in lista" su duplicato case-insensitive), `PUT /shopping-items/{id}?toBuy=` (toggle), `DELETE /shopping-items/{id}`. In creazione spesa, `POST /bills/new` accetta il param ripetuto opzionale `shoppingItemIds` (serializzato senza `[]` via `paramsSerializer: { indexes: null }`): gli articoli vengono marcati come acquistati e sulla spesa viene salvato lo snapshot testuale `purchasedItems` (nuovo campo di `BillDTO`, es. "Latte, Uova (x6)", mostrato in `BillDetailDialog`). Modifica/eliminazione spesa non retroagiscono sulla lista.
