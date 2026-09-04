@@ -38,6 +38,7 @@ import {
   useLeaveGroup,
   useUpdateGroup,
 } from '@/api/hooks/groups'
+import { useGroupShoppingItems } from '@/api/hooks/shopping'
 import type { components } from '@/api/types'
 
 type SettlementDTO = components['schemas']['SettlementDTO']
@@ -123,6 +124,8 @@ function GroupDetailBody({
   const [createBillOpen, setCreateBillOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
   const [shoppingOpen, setShoppingOpen] = useState(false)
+  // Conteggio per il pulsante: pagina da 1 elemento, serve solo totalElements.
+  const shoppingCount = useGroupShoppingItems(groupId, 0, undefined, 1).data?.totalElements
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
@@ -147,17 +150,13 @@ function GroupDetailBody({
               <Users />
               Visualizza membri ({members.length})
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setShoppingOpen(true)}>
+              <ShoppingCart />
+              Lista della spesa ({shoppingCount ?? 0})
+            </Button>
           </div>
           {/* Azioni sul gruppo: solo icone, sulla stessa riga */}
           <div className="flex shrink-0 gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Lista della spesa"
-              onClick={() => setShoppingOpen(true)}
-            >
-              <ShoppingCart />
-            </Button>
             {isAdmin && (
               <>
                 <Button

@@ -37,7 +37,7 @@ function mockApi({
   bills = { content: [], totalPages: 0, number: 0 },
   balanceData = balance,
   groupSettlements = [],
-  shoppingItems = { content: [], totalPages: 0, number: 0 },
+  shoppingItems = { content: [], totalElements: 0, totalPages: 0, number: 0 },
 }: {
   membersData?: object[]
   friends?: object
@@ -111,13 +111,14 @@ describe('GroupDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'Modifica gruppo' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Esci dal gruppo' })).toBeTruthy()
     // La lista della spesa è visibile a tutti i membri.
-    expect(screen.getByRole('button', { name: 'Lista della spesa' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Lista della spesa/ })).toBeTruthy()
   })
 
   it('apre la lista della spesa del gruppo', async () => {
     mockApi({
       shoppingItems: {
         content: [{ itemId: 1, groupId: 5, name: 'Latte', toBuy: true }],
+        totalElements: 1,
         totalPages: 1,
         number: 0,
       },
@@ -125,7 +126,8 @@ describe('GroupDetailPage', () => {
     renderDetail()
 
     await screen.findByRole('heading', { name: 'Vacanze' })
-    fireEvent.click(screen.getByRole('button', { name: 'Lista della spesa' }))
+    // Il pulsante sotto "Visualizza membri" mostra il numero di elementi in lista.
+    fireEvent.click(await screen.findByRole('button', { name: 'Lista della spesa (1)' }))
 
     expect(await screen.findByText('Latte')).toBeTruthy()
   })
