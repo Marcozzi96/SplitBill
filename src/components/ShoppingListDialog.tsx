@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
-import { LoaderCircle, Plus, Trash2 } from 'lucide-react'
+import { Check, LoaderCircle, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -90,6 +90,7 @@ export default function ShoppingListDialog({
                         onError: (err) => toast.error(getApiErrorMessage(err)),
                       })
                     }
+                    deleting={deleteMutation.isPending}
                   />
                 ))}
               </ul>
@@ -132,12 +133,16 @@ function ShoppingItemRow({
   item,
   onToggle,
   onDelete,
+  deleting,
 }: {
   item: ShoppingItemDTO
   onToggle: (toBuy: boolean) => void
   onDelete: () => void
+  deleting: boolean
 }) {
   const bought = item.toBuy === false
+  // Conferma inline: il primo tap sul cestino mostra conferma/annulla nella riga.
+  const [confirming, setConfirming] = useState(false)
   return (
     <li className="border-border flex items-center gap-1 border-b py-1 last:border-b-0">
       <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2">
@@ -169,15 +174,41 @@ function ShoppingItemRow({
           )}
         </span>
       </label>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-11 shrink-0"
-        aria-label={`Elimina ${item.name}`}
-        onClick={onDelete}
-      >
-        <Trash2 />
-      </Button>
+      {confirming ? (
+        <span className="flex shrink-0 items-center gap-1">
+          <span className="text-muted-foreground text-xs">Eliminare?</span>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="size-11"
+            aria-label={`Conferma eliminazione ${item.name}`}
+            disabled={deleting}
+            onClick={onDelete}
+          >
+            <Check />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label={`Annulla eliminazione ${item.name}`}
+            disabled={deleting}
+            onClick={() => setConfirming(false)}
+          >
+            <X />
+          </Button>
+        </span>
+      ) : (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11 shrink-0"
+          aria-label={`Elimina ${item.name}`}
+          onClick={() => setConfirming(true)}
+        >
+          <Trash2 />
+        </Button>
+      )}
     </li>
   )
 }

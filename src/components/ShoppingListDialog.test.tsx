@@ -77,13 +77,27 @@ describe('ShoppingListDialog', () => {
     )
   })
 
-  it('elimina un articolo con il bottone dedicato', async () => {
+  it('elimina un articolo solo dopo la conferma inline', async () => {
     mockedDelete.mockResolvedValue({ data: {} })
     renderDialog()
 
+    // Il primo tap mostra la conferma inline, senza chiamare il backend.
     fireEvent.click(await screen.findByRole('button', { name: 'Elimina Uova' }))
+    expect(screen.getByText('Eliminare?')).toBeTruthy()
+    expect(mockedDelete).not.toHaveBeenCalled()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Conferma eliminazione Uova' }))
     await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith('/shopping-items/2'))
+  })
+
+  it('annulla la conferma inline senza eliminare', async () => {
+    renderDialog()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Elimina Uova' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Annulla eliminazione Uova' }))
+
+    expect(mockedDelete).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Elimina Uova' })).toBeTruthy()
   })
 
   it('aggiunge un articolo dal form inline', async () => {
