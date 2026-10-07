@@ -11,12 +11,12 @@ import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 
 // Bottom navigation mobile-first: tap target >= 44px (h-16), safe-area per iOS.
 const NAV_ITEMS = [
-  { to: '/', label: 'Home', icon: Home, end: true },
-  { to: '/friends', label: 'Amici', icon: Users },
+  { to: '/', label: 'home', icon: Home, end: true },
+  { to: '/friends', label: 'amici', icon: Users },
   // iconClass: l'icona custom dei gruppi riempie meno la viewBox delle icone
   // lucide, quindi va leggermente ingrandita per apparire delle stesse dimensioni.
-  { to: '/groups', label: 'Gruppi', icon: GroupsCircleIcon, iconClass: 'size-8.5' },
-  { to: '/settings', label: 'Impostazioni', icon: Settings },
+  { to: '/groups', label: 'gruppi', icon: GroupsCircleIcon, iconClass: 'size-8.5' },
+  { to: '/settings', label: 'impostazioni', icon: Settings },
 ] as const
 
 export default function AppLayout() {
@@ -44,13 +44,17 @@ export default function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 pb-20">
-        <Outlet />
+        {/* key sul path: a ogni cambio rotta il wrapper si rimonta e riparte
+            l'animazione di ingresso pagina (crt-page-in). */}
+        <div key={location.pathname} className="page-enter">
+          <Outlet />
+        </div>
       </main>
       {/* FAB contestuale: azione di creazione principale della schermata. */}
       <Button
         size="icon"
         aria-label={fabLabel}
-        className="fixed right-4 bottom-20 z-40 size-14 rounded-full shadow-lg"
+        className="fixed right-4 bottom-20 z-40 size-14 shadow-lg dark:shadow-[0_0_22px_rgb(52_211_153/0.35)]"
         onClick={() => setCreateOpen(true)}
       >
         <Plus className="size-6" />
@@ -81,19 +85,24 @@ export default function AppLayout() {
                 className={({ isActive }) =>
                   cn(
                     'text-muted-foreground flex h-16 flex-col items-center justify-center gap-1 text-xs',
-                    isActive && 'text-primary font-medium',
+                    isActive && 'text-primary font-bold',
                   )
                 }
               >
-                <span className="relative">
-                  <Icon className={cn('size-6', 'iconClass' in rest && rest.iconClass)} />
-                  {to === '/friends' && requestsCount > 0 && (
-                    <span className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-2.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
-                      {requestsCount > 9 ? '9+' : requestsCount}
+                {({ isActive }) => (
+                  <>
+                    <span className="relative">
+                      <Icon className={cn('size-6', 'iconClass' in rest && rest.iconClass)} />
+                      {to === '/friends' && requestsCount > 0 && (
+                        <span className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-2.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
+                          {requestsCount > 9 ? '9+' : requestsCount}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                {label}
+                    {/* Voce attiva racchiusa tra parentesi quadre, stile CLI. */}
+                    <span>{isActive ? `[${label}]` : label}</span>
+                  </>
+                )}
               </NavLink>
             </li>
           ))}

@@ -228,7 +228,11 @@ describe('GroupDetailPage', () => {
     renderDetail()
 
     await screen.findByText('Cena')
-    expect(screen.getByText(/Pagata da mario/)).toBeTruthy()
+    expect(
+      screen.getByText(
+        (_, el) => el?.tagName === 'P' && /Pagata da mario/.test(el.textContent ?? ''),
+      ),
+    ).toBeTruthy()
     expect(screen.getByText(/50,00/)).toBeTruthy()
     expect(mockedGet).toHaveBeenCalledWith('/bills/group/5', {
       params: { page: 0, size: 20 },

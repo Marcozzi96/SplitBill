@@ -41,7 +41,7 @@ export default function BillCard({
 
   return (
     <Card
-      className={cn(onClick && 'cursor-pointer')}
+      className={cn(onClick && 'group hover:bg-accent/50 cursor-pointer transition-colors')}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
@@ -49,6 +49,14 @@ export default function BillCard({
     >
       <CardContent className="flex items-center justify-between gap-2 py-3">
         <div className="flex min-w-0 items-center gap-3">
+          {onClick && (
+            <span
+              aria-hidden
+              className="text-primary -ml-1 w-3 opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              &gt;
+            </span>
+          )}
           <span
             aria-hidden
             className={cn(
@@ -61,7 +69,8 @@ export default function BillCard({
           <div className="min-w-0">
             <p className="truncate font-medium">{bill.description}</p>
             <p className="text-muted-foreground truncate text-sm">
-              Pagata da {bill.buyer?.username} · {formatDate(bill.creationDate)}
+              Pagata da <span className="text-chart-2">{bill.buyer?.username}</span> ·{' '}
+              {formatDate(bill.creationDate)}
             </p>
             {bill.notes && (
               <p className="text-muted-foreground line-clamp-1 text-sm">{bill.notes}</p>

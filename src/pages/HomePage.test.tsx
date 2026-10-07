@@ -134,13 +134,13 @@ describe('HomePage', () => {
     renderPage()
 
     await screen.findByRole('heading', { name: 'Ciao, mario' })
-    expect(screen.getByText('Il tuo saldo globale')).toBeTruthy()
+    expect(screen.getByText('$ saldo --globale')).toBeTruthy()
     expect(screen.getByText('20,00 €')).toBeTruthy()
     expect(screen.getByText('Nel complesso ti devono soldi')).toBeTruthy()
     expect(byText('Pagato 50,00 € · Dovuto 30,00 €')).toBeTruthy()
     // Tutti i settlement sono visibili (niente più limite "in evidenza").
     expect(byText('Devi 10,00 € a luigi')).toBeTruthy()
-    expect(screen.getByText('gruppo: Vacanze')).toBeTruthy()
+    expect(byText('gruppo: Vacanze')).toBeTruthy()
     expect(byText('Devi 4,00 € a anna')).toBeTruthy()
     expect(byText('paolo ti deve 7,50 €')).toBeTruthy()
     expect(screen.getAllByText('personale')).toHaveLength(2)

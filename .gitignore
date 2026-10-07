@@ -5,6 +5,7 @@ dev-dist
 /playwright-report/
 /blob-report/
 *.local
+.agents/
 .env
 .env.*
 !.env.example

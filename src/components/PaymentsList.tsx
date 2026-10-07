@@ -61,14 +61,18 @@ export default function PaymentsList() {
                     {isPayer ? (
                       <>
                         Hai rimborsato{' '}
-                        <span className="font-medium">{formatEuro(payment.amount)}</span> a{' '}
-                        <span className="font-medium">{payment.payee?.username}</span>
+                        <span className="text-destructive font-medium">
+                          {formatEuro(payment.amount)}
+                        </span>{' '}
+                        a <span className="text-chart-2 font-medium">{payment.payee?.username}</span>
                       </>
                     ) : (
                       <>
-                        <span className="font-medium">{payment.payer?.username}</span> ti ha
-                        rimborsato{' '}
-                        <span className="font-medium">{formatEuro(payment.amount)}</span>
+                        <span className="text-chart-2 font-medium">{payment.payer?.username}</span>{' '}
+                        ti ha rimborsato{' '}
+                        <span className="text-success font-medium">
+                          {formatEuro(payment.amount)}
+                        </span>
                       </>
                     )}
                   </p>

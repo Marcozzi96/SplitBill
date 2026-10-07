@@ -76,7 +76,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 
 ## Convenzioni vincolanti
 
-- **Temi**: chiaro/scuro via CSS variable in `src/index.css` (classe `.dark` su `<html>`, gestita da `next-themes` con default `system`; selettore nella pagina Impostazioni). Mai colori hardcoded nei componenti: usare i token semantici (`bg-card`, `text-muted-foreground`, `text-success`/`text-destructive` per i saldi, ...).
+- **Temi**: identità visiva "terminale" — tutto monospace (IBM Plex Mono via fontsource); il tema scuro è un terminale moderno da editor (blu-nero `#0a0e14` + verde elettrico `#34d399`, scanline + vignettatura in `body::after`, alone `.crt-glow`, cursore `.cursor-blink`, glow su FAB e dialog), il tema chiaro è "output su foglio bianco" (bianco freddo, inchiostro blu-nero, accento smeraldo `#059669`). Font display per i grandi numeri: VT323 (utility `font-crt`). Boot sequence stile CLI all'avvio (`BootSequence.tsx`: una volta per sessione via sessionStorage, skip al tocco, disattivata con prefers-reduced-motion). Chiaro/scuro via CSS variable in `src/index.css` (classe `.dark` su `<html>`, gestita da `next-themes` con default `system`; selettore nella pagina Impostazioni). Radius base piccolo (0.25rem): controlli squadrati da CLI.
 - **JWT**: token in `localStorage` (chiave in `src/api/client.ts`), header `Authorization: Bearer <token>` su tutte le chiamate tranne `/auth/**`. Mai cookie.
 - **401**: gestito dall'interceptor in `src/api/client.ts` (svuota token, redirect a `/login`). Non duplicare la logica.
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".
@@ -97,7 +97,6 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 
 ## Stile
 
-- Mobile-first: bottom navigation, tap target ≥44px, liste come card (mai tabelle).
 - Lingua UI: italiano. Codice, commenti e commit in inglese o coerenti con l'esistente.
-- Componenti UI: preferire shadcn/ui; test con Vitest + Testing Library per pagine e hook.
+- Test con Vitest + Testing Library per pagine e hook.
 - Modifiche minime e mirate: niente refactor opportunistici fuori scope.

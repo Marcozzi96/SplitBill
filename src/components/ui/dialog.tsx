@@ -68,8 +68,9 @@ const DialogContent = React.forwardRef<
         // Layout a tre fasce: header e footer fissi (flex-none), solo DialogBody
         // scrolla. Il Popup non scrolla: max-h + overflow-hidden, padding spostato
         // sulle singole fasce.
+        // Apertura/chiusura animate via keyframes CRT in index.css (crt-on/crt-off).
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-border outline-none sm:max-w-sm",
           className
         )}
         {...props}
@@ -100,7 +101,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-none flex-col gap-2 p-4 pr-10 pb-2", className)}
+      className={cn("border-border/70 flex flex-none flex-col gap-2 border-b border-dashed p-4 pr-10 pb-3", className)}
       {...props}
     />
   )
@@ -149,7 +150,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-none font-medium",
+        "font-heading text-primary text-base leading-none font-medium",
         className
       )}
       {...props}

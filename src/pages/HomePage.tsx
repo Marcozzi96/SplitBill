@@ -55,7 +55,12 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
-      <h1 className="text-2xl font-bold">Ciao, {user?.username}</h1>
+      <div className="flex flex-col gap-1">
+        <p className="text-muted-foreground text-sm">$ whoami</p>
+        <h1 className="cursor-blink w-fit text-2xl font-bold">
+          Ciao, <span className="text-chart-2">{user?.username}</span>
+        </h1>
+      </div>
 
       {requestsCount > 0 && (
         <Card>
@@ -72,23 +77,30 @@ export default function HomePage() {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="flex flex-col gap-1 py-4">
-          <p className="text-muted-foreground text-sm">Il tuo saldo globale</p>
-          <p className={cn('text-3xl font-bold', netBalanceClass(net))}>{formatEuro(net)}</p>
-          <p className="text-muted-foreground text-sm">
-            {net > 0
-              ? 'Nel complesso ti devono soldi'
-              : net < 0
-                ? 'Nel complesso devi soldi'
-                : 'Sei in pari'}
-          </p>
-          <p className="text-muted-foreground pt-2 text-xs">
-            Pagato {formatEuro(balanceQuery.data?.totalPaid)} · Dovuto{' '}
-            {formatEuro(balanceQuery.data?.totalOwed)}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Il saldo è il hero della pagina: output di un comando, numero
+          gigante in font CRT con alone fosforo (verde/rosso per segno). */}
+      <section className="border-border bg-card border px-4 py-5">
+        <p className="text-muted-foreground text-sm">$ saldo --globale</p>
+        <p
+          className={cn(
+            'font-crt crt-glow mt-1 text-7xl leading-none tracking-wide',
+            netBalanceClass(net),
+          )}
+        >
+          {formatEuro(net)}
+        </p>
+        <p className="text-muted-foreground mt-2 text-sm">
+          {net > 0
+            ? 'Nel complesso ti devono soldi'
+            : net < 0
+              ? 'Nel complesso devi soldi'
+              : 'Sei in pari'}
+        </p>
+        <p className="text-muted-foreground border-border mt-3 border-t border-dashed pt-3 text-xs">
+          Pagato <span className="text-success">{formatEuro(balanceQuery.data?.totalPaid)}</span> ·
+          Dovuto <span className="text-destructive">{formatEuro(balanceQuery.data?.totalOwed)}</span>
+        </p>
+      </section>
 
       {/* Base UI smonta i pannelli inattivi: la query /payments parte
           solo quando si apre la tab Cronologia. */}

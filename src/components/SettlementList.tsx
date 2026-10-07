@@ -86,24 +86,50 @@ export function SettlementList({
               goToContext(settlement)
             }
           }}
-          className="hover:bg-accent/50 cursor-pointer transition-colors"
+          className="group hover:bg-accent/50 cursor-pointer transition-colors"
         >
           <CardContent className="flex items-center justify-between gap-2 py-3">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1">
+              <span
+                aria-hidden
+                className="text-primary w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                &gt;
+              </span>
+              <div className="min-w-0">
               {settlement.direction === 'DEBT' ? (
                 <p className="text-sm">
-                  Devi <span className="font-medium">{formatEuro(settlement.amount)}</span> a{' '}
-                  <span className="font-medium">{settlement.counterparty?.username}</span>
+                  Devi{' '}
+                  <span className="text-destructive font-medium">
+                    {formatEuro(settlement.amount)}
+                  </span>{' '}
+                  a{' '}
+                  <span className="text-chart-2 font-medium">
+                    {settlement.counterparty?.username}
+                  </span>
                   {deletedBadge(settlement)}
                 </p>
               ) : (
                 <p className="text-sm">
-                  <span className="font-medium">{settlement.counterparty?.username}</span>
+                  <span className="text-chart-2 font-medium">
+                    {settlement.counterparty?.username}
+                  </span>
                   {deletedBadge(settlement)} ti deve{' '}
-                  <span className="font-medium">{formatEuro(settlement.amount)}</span>
+                  <span className="text-success font-medium">
+                    {formatEuro(settlement.amount)}
+                  </span>
                 </p>
               )}
-              <p className="text-muted-foreground text-xs">{contextLabel(settlement)}</p>
+              <p className="text-muted-foreground text-xs">
+                {settlement.groupName ? (
+                  <>
+                    gruppo: <span className="text-warning">{settlement.groupName}</span>
+                  </>
+                ) : (
+                  'personale'
+                )}
+              </p>
+              </div>
             </div>
             {settlement.direction === 'DEBT' && (
               <Button
