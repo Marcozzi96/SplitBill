@@ -222,6 +222,21 @@ describe('FriendDetailPage', () => {
     expect(screen.queryByLabelText('Descrizione')).toBeNull()
   })
 
+  it('rimuove l’amicizia dopo conferma e torna alla lista', async () => {
+    mockedDelete.mockResolvedValue({ data: {} })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rimuovi amico' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Rimuovi' }))
+
+    await waitFor(() =>
+      expect(mockedDelete).toHaveBeenCalledWith('/user/cancelFriendship', {
+        params: { friendId: 2 },
+      }),
+    )
+    await screen.findByText('Lista amici')
+  })
+
   it('i bottoni modifica/elimina non aprono il dettaglio', async () => {
     renderPage()
 

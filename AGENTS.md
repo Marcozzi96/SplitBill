@@ -42,6 +42,8 @@ src/
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, ...)
 │   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" contestuale (vedi sotto)
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
+│   # BalanceRow.tsx: riga condivisa delle liste Amici/Gruppi (link al dettaglio, saldo netto a
+│   #   destra da /balance/settlements aggregato in lib/settlements.ts, cursore ">" in hover)
 │   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
 │   #   (in creazione di spesa di gruppo anche la sezione "Articoli acquistati" dalla lista della spesa)
 │   #   (cliccabile con prop onClick: apre il dettaglio read-only)

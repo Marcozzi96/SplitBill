@@ -20,10 +20,19 @@ const mockedPost = vi.mocked(api.post)
 
 const emptyPage = { content: [], totalPages: 0, number: 0 }
 
-function mockLists({ groups = emptyPage, friends = emptyPage }: { groups?: object; friends?: object } = {}) {
+function mockLists({
+  groups = emptyPage,
+  friends = emptyPage,
+  settlements = [] as object[],
+}: {
+  groups?: object
+  friends?: object
+  settlements?: object[]
+} = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/groups') return Promise.resolve({ data: groups })
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
+    if (url === '/balance/settlements') return Promise.resolve({ data: settlements })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
@@ -45,7 +54,7 @@ beforeEach(() => {
 })
 
 describe('GroupsPage', () => {
-  it('mostra la lista dei gruppi con link al dettaglio', async () => {
+  it('mostra la lista dei gruppi con link al dettaglio e saldo', async () => {
     mockLists({
       groups: {
         content: [
@@ -54,8 +63,35 @@ describe('GroupsPage', () => {
             name: 'Vacanze',
             description: 'Viaggio estivo',
             creationDate: '2026-08-01',
+            users: [{ userId: 1 }, { userId: 2 }, { userId: 3 }, { userId: 4 }],
           },
         ],
+        totalPages: 1,
+        number: 0,
+      },
+      settlements: [
+        {
+          counterparty: { userId: 2, username: 'anna' },
+          amount: 8,
+          direction: 'DEBT',
+          groupId: 3,
+          groupName: 'Vacanze',
+        },
+      ],
+    })
+    renderGroupsPage()
+
+    await screen.findByText('Vacanze')
+    expect(screen.getByText('4 membri · Viaggio estivo')).toBeTruthy()
+    expect(screen.getByText('−8,00 €')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Vacanze/ }).getAttribute('href')).toBe('/groups/3')
+    expect(mockedGet).toHaveBeenCalledWith('/groups', { params: { page: 0, size: 20 } })
+  })
+
+  it('senza saldi aperti il gruppo risulta in pari', async () => {
+    mockLists({
+      groups: {
+        content: [{ groupId: 3, name: 'Vacanze', creationDate: '2026-08-01' }],
         totalPages: 1,
         number: 0,
       },
@@ -63,14 +99,13 @@ describe('GroupsPage', () => {
     renderGroupsPage()
 
     await screen.findByText('Vacanze')
-    expect(screen.getByText('Viaggio estivo')).toBeTruthy()
-    expect(screen.getByRole('link', { name: /Vacanze/ }).getAttribute('href')).toBe('/groups/3')
-    expect(mockedGet).toHaveBeenCalledWith('/groups', { params: { page: 0, size: 20 } })
+    expect(screen.getByText('in pari')).toBeTruthy()
   })
 
-  it('mostra lo stato vuoto senza gruppi', async () => {
+  it('mostra lo stato vuoto con invito a creare il primo gruppo', async () => {
     renderGroupsPage()
-    await screen.findByText('Nessun gruppo ancora: crea il primo.')
+    await screen.findByText('Nessun gruppo ancora.')
+    expect(screen.getByRole('button', { name: /Crea il primo gruppo/ })).toBeTruthy()
   })
 
   it('crea un gruppo con nome/descrizione in query params e membri nel body', async () => {
@@ -84,7 +119,7 @@ describe('GroupsPage', () => {
     mockedPost.mockResolvedValue({ data: { groupId: 10 } })
     renderGroupsPage()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nuovo gruppo' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Crea il primo gruppo/ }))
     fireEvent.change(await screen.findByLabelText('Nome'), { target: { value: 'Casa' } })
     fireEvent.change(screen.getByLabelText('Descrizione'), {
       target: { value: 'Spese condominiali' },

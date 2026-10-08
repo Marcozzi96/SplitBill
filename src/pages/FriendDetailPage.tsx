@@ -1,18 +1,28 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Pencil, Plus, Trash2, UserMinus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import BillCard from '@/components/BillCard'
 import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import { getApiErrorMessage } from '@/api/errors'
 import { useMyPersonalBills } from '@/api/hooks/bills'
-import { useFriends } from '@/api/hooks/friends'
+import { useCancelFriendship, useFriends } from '@/api/hooks/friends'
 import { useAuth } from '@/auth/auth-context'
 import type { components } from '@/api/types'
 
 type BillDTO = components['schemas']['BillDTO']
 type GroupMemberDTO = components['schemas']['GroupMemberDTO']
+type UserDTO = components['schemas']['UserDTO']
 
 // Dettaglio amico: elenco delle spese SENZA gruppo condivise con quell'amico.
 // Il filtro (groupId nullo + amico coinvolto) è lato server via
@@ -28,6 +38,7 @@ export default function FriendDetailPage() {
   const [deletingBill, setDeletingBill] = useState<BillDTO | null>(null)
   const [viewingBill, setViewingBill] = useState<BillDTO | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [removeOpen, setRemoveOpen] = useState(false)
 
   if (friendsQuery.isPending || billsQuery.isPending) {
     return (
@@ -108,6 +119,14 @@ export default function FriendDetailPage() {
         <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus />
           Nuova spesa
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Rimuovi amico"
+          onClick={() => setRemoveOpen(true)}
+        >
+          <UserMinus />
         </Button>
       </div>
 
@@ -205,6 +224,63 @@ export default function FriendDetailPage() {
         />
       )}
       <CreateBillDialog members={editMembers} open={createOpen} onOpenChange={setCreateOpen} />
+      <RemoveFriendDialog friend={friend} open={removeOpen} onOpenChange={setRemoveOpen} />
     </div>
+  )
+}
+
+// Rimozione dell'amicizia dal dettaglio: i debiti/crediti aperti sopravvivono
+// come personali in Home, ma non si potranno più creare spese insieme.
+function RemoveFriendDialog({
+  friend,
+  open,
+  onOpenChange,
+}: {
+  friend: UserDTO
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const navigate = useNavigate()
+  const cancelMutation = useCancelFriendship()
+
+  function handleRemove() {
+    if (friend.userId == null) return
+    cancelMutation.mutate(friend.userId, {
+      onSuccess: () => {
+        toast.success('Amico rimosso')
+        navigate('/friends')
+      },
+      onError: (err) => toast.error(getApiErrorMessage(err)),
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Rimuovi amico</DialogTitle>
+          <DialogDescription render={<div className="flex flex-col gap-2" />}>
+            <p>Rimuovere {friend.username} dagli amici?</p>
+            <p>
+              I conti in sospeso non andranno persi: i debiti e i crediti restano nella tua Home
+              per essere saldati. Tuttavia, non potrete più inserire nuove spese insieme.
+            </p>
+            <p>Puoi sempre inviare nuovamente la richiesta di amicizia in seguito.</p>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annulla
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={cancelMutation.isPending}
+            onClick={handleRemove}
+          >
+            Rimuovi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -25,17 +25,20 @@ function mockLists({
   friends = emptyPage,
   received = emptyPage,
   sent = emptyPage,
+  settlements = [] as object[],
   requestsCount = 0,
 }: {
   friends?: object
   received?: object
   sent?: object
+  settlements?: object[]
   requestsCount?: number
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/user/getFriendshipReqReceived') return Promise.resolve({ data: received })
     if (url === '/user/getFriendshipReqSent') return Promise.resolve({ data: sent })
+    if (url === '/balance/settlements') return Promise.resolve({ data: settlements })
     if (url === '/user/friendshipRequests/count')
       return Promise.resolve({ data: { count: requestsCount } })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
@@ -62,52 +65,79 @@ beforeEach(() => {
 })
 
 describe('FriendsPage', () => {
-  it('mostra la lista degli amici', async () => {
+  it('mostra la lista degli amici con il saldo personale', async () => {
     mockLists({
       friends: {
-        content: [{ userId: 2, username: 'luigi', email: 'luigi@example.com' }],
+        content: [
+          { userId: 1, username: 'anna', email: 'anna@example.com' },
+          { userId: 2, username: 'bruno', email: 'bruno@example.com' },
+        ],
         totalPages: 1,
         number: 0,
       },
+      settlements: [
+        // Bruno mi deve 12,50 (personale, senza gruppo).
+        {
+          counterparty: { userId: 2, username: 'bruno' },
+          amount: 12.5,
+          direction: 'CREDIT',
+          groupId: null,
+        },
+        // Debito di gruppo con anna: non deve pesare sul saldo personale.
+        {
+          counterparty: { userId: 1, username: 'anna' },
+          amount: 30,
+          direction: 'DEBT',
+          groupId: 5,
+          groupName: 'Calcetto',
+        },
+      ],
     })
     renderFriendsPage()
 
-    await screen.findByText('luigi')
-    expect(screen.getByText('luigi@example.com')).toBeTruthy()
+    await screen.findByText('ti deve 12,50 €')
+    // anna ha solo un debito di gruppo: qui risulta in pari.
+    expect(screen.getByText('in pari')).toBeTruthy()
     expect(mockedGet).toHaveBeenCalledWith('/user/getFriends', {
       params: { page: 0, size: 20 },
     })
   })
 
-  it('mostra lo stato vuoto senza amici', async () => {
-    renderFriendsPage()
-    await screen.findByText('Nessun amico ancora: invia la prima richiesta.')
-  })
-
-  it('filtra gli amici con il box di ricerca', async () => {
+  it('ordina gli amici per saldo aperto prima dell’ordine alfabetico', async () => {
     mockLists({
       friends: {
         content: [
-          { userId: 1, username: 'mario', email: 'mario@example.com' },
-          { userId: 2, username: 'luigi', email: 'luigi@example.com' },
+          { userId: 1, username: 'anna', email: 'anna@example.com' },
+          { userId: 2, username: 'bruno', email: 'bruno@example.com' },
         ],
         totalPages: 1,
         number: 0,
       },
+      settlements: [
+        {
+          counterparty: { userId: 2, username: 'bruno' },
+          amount: 5,
+          direction: 'DEBT',
+          groupId: null,
+        },
+      ],
     })
     renderFriendsPage()
 
-    await screen.findByText('mario')
-    fireEvent.change(screen.getByLabelText('Cerca amici'), { target: { value: 'luigi' } })
-
-    expect(screen.queryByText('mario')).toBeNull()
-    expect(screen.getByText('luigi')).toBeTruthy()
-
-    fireEvent.change(screen.getByLabelText('Cerca amici'), { target: { value: 'nessuno' } })
-    await screen.findByText('Nessun amico corrisponde alla ricerca.')
+    await screen.findByText('devi 5,00 €')
+    const links = screen.getAllByRole('link')
+    // bruno (saldo aperto) prima di anna (in pari), nonostante l'alfabeto.
+    expect(links[0].textContent).toContain('bruno')
+    expect(links[1].textContent).toContain('anna')
   })
 
-  it('cliccando sull’amico si apre il suo dettaglio', async () => {
+  it('mostra lo stato vuoto con invito a inviare la prima richiesta', async () => {
+    renderFriendsPage()
+    await screen.findByText('Nessun amico ancora.')
+    expect(screen.getByRole('button', { name: /Invia la prima richiesta/ })).toBeTruthy()
+  })
+
+  it('le righe degli amici sono link al dettaglio', async () => {
     mockLists({
       friends: {
         content: [{ userId: 2, username: 'luigi', email: 'luigi@example.com' }],
@@ -117,25 +147,23 @@ describe('FriendsPage', () => {
     })
     renderFriendsPage()
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: /luigi luigi@example\.com/ }),
-    )
-    await screen.findByText('Dettaglio amico')
+    const row = await screen.findByRole('link', { name: /luigi/ })
+    expect(row.getAttribute('href')).toBe('/friends/2')
   })
 
-  it('mostra sul tab Ricevute il badge con il numero di richieste in attesa', async () => {
+  it('mostra sul tab Richieste il badge con il numero di richieste in attesa', async () => {
     mockLists({ requestsCount: 3 })
     renderFriendsPage()
 
-    const tabRicevute = await screen.findByRole('button', { name: 'Ricevute 3' })
-    expect(tabRicevute.textContent).toContain('3')
+    const tab = await screen.findByRole('tab', { name: 'Richieste 3' })
+    expect(tab.textContent).toContain('3')
   })
 
-  it('senza richieste in attesa il badge sul tab Ricevute non compare', async () => {
+  it('senza richieste in attesa il badge sul tab Richieste non compare', async () => {
     renderFriendsPage()
 
-    const tabRicevute = await screen.findByRole('button', { name: 'Ricevute' })
-    expect(tabRicevute.textContent).toBe('Ricevute')
+    const tab = await screen.findByRole('tab', { name: 'Richieste' })
+    expect(tab.textContent).toBe('Richieste')
   })
 
   it('accetta una richiesta ricevuta passando lo userId del richiedente', async () => {
@@ -157,7 +185,7 @@ describe('FriendsPage', () => {
     mockedPut.mockResolvedValue({ data: {} })
     renderFriendsPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ricevute' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Richieste' }))
     await screen.findByText('anna')
     fireEvent.click(screen.getByRole('button', { name: 'Accetta' }))
 
@@ -168,7 +196,7 @@ describe('FriendsPage', () => {
     )
   })
 
-  it('annulla una richiesta inviata con refuseFriendship', async () => {
+  it('annulla una richiesta inviata con refuseFriendship dalla sezione Inviate', async () => {
     mockLists({
       sent: {
         content: [
@@ -186,8 +214,9 @@ describe('FriendsPage', () => {
     mockedPut.mockResolvedValue({ data: {} })
     renderFriendsPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Inviate' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Richieste' }))
     await screen.findByText('paolo')
+    expect(screen.getByText('Inviate')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Annulla' }))
 
     await waitFor(() =>
@@ -201,7 +230,7 @@ describe('FriendsPage', () => {
     mockedPost.mockResolvedValue({ data: '' })
     renderFriendsPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nuova richiesta' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Invia la prima richiesta/ }))
     fireEvent.change(await screen.findByLabelText('Username o email'), {
       target: { value: 'anna@example.com' },
     })

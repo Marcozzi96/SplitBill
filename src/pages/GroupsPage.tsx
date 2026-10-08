@@ -1,25 +1,18 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { LoaderCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import BalanceRow from '@/components/BalanceRow'
 import CreateGroupDialog from '@/components/CreateGroupDialog'
 import { getApiErrorMessage } from '@/api/errors'
+import { useMySettlements } from '@/api/hooks/balance'
 import { useGroups } from '@/api/hooks/groups'
-
-function formatDate(iso?: string) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('it-IT', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+import { byOpenBalance, netByGroup } from '@/lib/settlements'
 
 export default function GroupsPage() {
   const [page, setPage] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
   const groupsQuery = useGroups(page)
+  const settlementsQuery = useMySettlements()
 
   if (groupsQuery.isPending) {
     return (
@@ -40,41 +33,44 @@ export default function GroupsPage() {
     )
   }
 
-  const groups = groupsQuery.data?.content ?? []
+  // Saldo netto per gruppo dai settlement globali, già in cache dalla Home.
+  // Se la query fallisce la lista resta usabile, senza saldi.
+  const nets = settlementsQuery.data ? netByGroup(settlementsQuery.data) : undefined
+  // Ordinamento per rilevanza nella pagina caricata: prima i saldi aperti.
+  const groups = byOpenBalance(
+    groupsQuery.data?.content ?? [],
+    (g) => nets?.get(g.groupId ?? -1) ?? 0,
+    (g) => g.name ?? '',
+  )
   const totalPages = groupsQuery.data?.totalPages ?? 1
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1">
+        <p className="text-muted-foreground text-sm">$ ls ~/gruppi</p>
         <h1 className="text-2xl font-bold">Gruppi</h1>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Users />
-          Nuovo gruppo
-        </Button>
       </div>
 
       {groups.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center">
-          Nessun gruppo ancora: crea il primo.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <p className="text-muted-foreground">Nessun gruppo ancora.</p>
+          <Button variant="outline" onClick={() => setDialogOpen(true)}>
+            <Users />
+            Crea il primo gruppo
+          </Button>
+        </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {groups.map((group) => (
-            <Link key={group.groupId} to={`/groups/${group.groupId}`} className="block">
-              <Card className="hover:bg-muted/50 transition-colors">
-                <CardContent className="py-3">
-                  <p className="font-medium">{group.name}</p>
-                  {group.description && (
-                    <p className="text-muted-foreground line-clamp-2 text-sm">
-                      {group.description}
-                    </p>
-                  )}
-                  <p className="text-muted-foreground text-xs">
-                    Creato il {formatDate(group.creationDate)}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
+            <BalanceRow
+              key={group.groupId}
+              to={`/groups/${group.groupId}`}
+              name={group.name ?? ''}
+              nameClassName="text-warning"
+              subtext={groupSubtext(group.users?.length, group.description)}
+              net={nets ? (nets.get(group.groupId ?? -1) ?? 0) : undefined}
+              kind="group"
+            />
           ))}
         </div>
       )}
@@ -106,4 +102,14 @@ export default function GroupsPage() {
       <CreateGroupDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
+}
+
+// Sottotitolo della riga: il numero di membri (se il backend lo include nella
+// lista) dice quanto è "vivo" il gruppo; in mancanza, la descrizione.
+function groupSubtext(memberCount?: number, description?: string): string | undefined {
+  if (memberCount != null) {
+    const members = memberCount === 1 ? '1 membro' : `${memberCount} membri`
+    return description ? `${members} · ${description}` : members
+  }
+  return description || undefined
 }
