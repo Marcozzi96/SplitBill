@@ -235,7 +235,7 @@
     from {
       opacity: 0;
       scale: 1.08 0.02;
-      filter: brightness(2.5);
+      filter: brightness(1.6);
       }
     60% { opacity: 1; }
     to {
@@ -251,7 +251,7 @@
     to {
       opacity: 0;
       scale: 1 0.02;
-      filter: brightness(2.5);
+      filter: brightness(1.3);
       }
     }
 }

@@ -6,7 +6,7 @@ import BillCard from '@/components/BillCard'
 import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import { getApiErrorMessage } from '@/api/errors'
-import { useMyBills } from '@/api/hooks/bills'
+import { useMyPersonalBills } from '@/api/hooks/bills'
 import { useFriends } from '@/api/hooks/friends'
 import { useAuth } from '@/auth/auth-context'
 import type { components } from '@/api/types'
@@ -15,15 +15,15 @@ type BillDTO = components['schemas']['BillDTO']
 type GroupMemberDTO = components['schemas']['GroupMemberDTO']
 
 // Dettaglio amico: elenco delle spese SENZA gruppo condivise con quell'amico.
-// Le spese personali si ottengono filtrando /bills/getMyBills (groupId nullo e
-// amico coinvolto come buyer o debitore): il filtro vale sulla pagina caricata.
+// Il filtro (groupId nullo + amico coinvolto) è lato server via
+// /bills/getMyPersonalBills: la paginazione conta solo le spese rilevanti.
 export default function FriendDetailPage() {
   const friendId = Number(useParams().userId)
   const navigate = useNavigate()
   const { user } = useAuth()
   const friendsQuery = useFriends(0)
   const [page, setPage] = useState(0)
-  const billsQuery = useMyBills(page)
+  const billsQuery = useMyPersonalBills(friendId, page)
   const [editingBill, setEditingBill] = useState<BillDTO | null>(null)
   const [deletingBill, setDeletingBill] = useState<BillDTO | null>(null)
   const [viewingBill, setViewingBill] = useState<BillDTO | null>(null)
@@ -77,11 +77,7 @@ export default function FriendDetailPage() {
     )
   }
 
-  const bills = (billsQuery.data?.content ?? []).filter(
-    (bill) =>
-      bill.groupId == null &&
-      (bill.buyer?.userId === friendId || bill.transactions?.some((t) => t.userId === friendId)),
-  )
+  const bills = billsQuery.data?.content ?? []
   const totalPages = billsQuery.data?.totalPages ?? 1
 
   // Modifica/eliminazione: chiunque sia coinvolto nella spesa personale (buyer o

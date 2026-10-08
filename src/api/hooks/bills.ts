@@ -29,6 +29,21 @@ export function useMyBills(page: number) {
   })
 }
 
+// Spese personali (senza gruppo) tra l'utente e un amico: filtro lato server,
+// così la paginazione conta solo le spese rilevanti (dettaglio amico).
+export function useMyPersonalBills(friendId: number, page: number) {
+  return useQuery({
+    queryKey: [...BILLS_ROOT, 'personal', friendId, page],
+    queryFn: async () =>
+      (
+        await api.get<PageBillDTO>('/bills/getMyPersonalBills', {
+          params: { friendId, page, size: PAGE_SIZE },
+        })
+      ).data,
+    placeholderData: keepPreviousData,
+  })
+}
+
 // Spese pagate dall'utente.
 export function useBillsWhereImBuyer(page: number) {
   return useQuery({

@@ -28,9 +28,11 @@ const friendsPage = {
 }
 
 // Transazioni con segno, come dal backend: debitore negativo, credito del buyer positivo.
-const myBills = {
+// Il filtro (solo personali, solo con l'amico) è lato server: il mock risponde
+// già con il set filtrato, come farebbe /bills/getMyPersonalBills.
+const personalBills = {
   content: [
-    // Personale con l'amico come debitore: inclusa (buyer = io).
+    // Personale con l'amico come debitore (buyer = io).
     {
       billId: 1,
       description: 'Pizza',
@@ -44,17 +46,7 @@ const myBills = {
       ],
       creationDate: '2026-08-10',
     },
-    // Spesa di gruppo con l'amico: esclusa.
-    {
-      billId: 2,
-      description: 'Gita',
-      amount: 50,
-      groupId: 5,
-      buyer: { userId: 1, username: 'mario' },
-      transactions: [{ userId: 2, amount: -25 }],
-      creationDate: '2026-08-11',
-    },
-    // Personale pagata dall'amico: inclusa.
+    // Personale pagata dall'amico.
     {
       billId: 3,
       description: 'Cinema',
@@ -67,16 +59,6 @@ const myBills = {
         { userId: 2, amount: 8 },
       ],
       creationDate: '2026-08-12',
-    },
-    // Personale con un altro amico: esclusa.
-    {
-      billId: 4,
-      description: 'Taxi',
-      amount: 30,
-      groupId: null,
-      buyer: { userId: 1, username: 'mario' },
-      transactions: [{ userId: 3, amount: -15 }],
-      creationDate: '2026-08-13',
     },
   ],
   totalPages: 1,
@@ -113,27 +95,29 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockedGet.mockImplementation((url: string) => {
     if (url === '/user/getFriends') return Promise.resolve({ data: friendsPage })
-    if (url === '/bills/getMyBills') return Promise.resolve({ data: myBills })
+    if (url === '/bills/getMyPersonalBills') return Promise.resolve({ data: personalBills })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 })
 
 describe('FriendDetailPage', () => {
-  it('mostra solo le spese senza gruppo condivise con l’amico', async () => {
+  it('chiede al server le spese personali con l’amico e le mostra', async () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: 'luigi' })).toBeTruthy()
     expect(await screen.findByText('Pizza')).toBeTruthy()
     expect(screen.getByText('Cinema')).toBeTruthy()
-    expect(screen.queryByText('Gita')).toBeNull()
-    expect(screen.queryByText('Taxi')).toBeNull()
+    // Filtro lato server: friendId come query param, paginazione coerente.
+    expect(mockedGet).toHaveBeenCalledWith('/bills/getMyPersonalBills', {
+      params: { friendId: 2, page: 0, size: 20 },
+    })
   })
 
   it('mostra lo stato vuoto se non ci sono spese condivise', async () => {
     mockedGet.mockImplementation((url: string) => {
       if (url === '/user/getFriends') return Promise.resolve({ data: friendsPage })
-      if (url === '/bills/getMyBills')
-        return Promise.resolve({ data: { content: [], totalPages: 1, number: 0 } })
+      if (url === '/bills/getMyPersonalBills')
+        return Promise.resolve({ data: { content: [], totalPages: 0, number: 0 } })
       return Promise.reject(new Error(`GET non mockata: ${url}`))
     })
     renderPage()

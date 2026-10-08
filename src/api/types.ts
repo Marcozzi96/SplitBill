@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bills/getMyPersonalBills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recupera le spese personali con un amico
+         * @description Restituisce le spese personali (senza gruppo) in cui sono coinvolti sia l'utente autenticato sia l'amico indicato, con paginazione
+         */
+        get: operations["getPersonalBillsByFriend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bills/getMyBills": {
         parameters: {
             query?: never;
@@ -935,9 +955,9 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             unpaged?: boolean;
@@ -2640,6 +2660,39 @@ export interface operations {
         responses: {
             /** @description Lista spese restituita */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageBillDTO"];
+                };
+            };
+        };
+    };
+    getPersonalBillsByFriend: {
+        parameters: {
+            query: {
+                friendId: number;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista spese restituita */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageBillDTO"];
+                };
+            };
+            /** @description friendId mancante */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
