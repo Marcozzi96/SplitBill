@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BillForm, { type BillFormValues } from './BillForm'
 import { AuthContext, type AuthContextValue } from '@/auth/auth-context'
@@ -164,7 +164,7 @@ describe('BillForm', () => {
     expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', false)
     expect(screen.getByLabelText('Partecipa anna')).toHaveProperty('checked', false)
     // Il buyer resta selezionabile in "Pagato da" anche senza quota.
-    expect(screen.getByLabelText('Pagato da')).toHaveProperty('value', '1')
+    expect(screen.getByLabelText('Pagato da').textContent).toContain('mario (Tu)')
   })
 
   it('in creazione un membro eliminato non è selezionabile né tra i "Pagato da"', () => {
@@ -176,8 +176,9 @@ describe('BillForm', () => {
     // Gli altri membri restano selezionati di default.
     expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     // Escluso dalle opzioni "Pagato da".
-    const buyerSelect = screen.getByLabelText('Pagato da')
-    expect(within(buyerSelect).queryByRole('option', { name: 'UtenteEliminato' })).toBeNull()
+    fireEvent.click(screen.getByLabelText('Pagato da'))
+    expect(screen.queryByRole('option', { name: /UtenteEliminato/ })).toBeNull()
+    expect(screen.getByRole('option', { name: 'mario (Tu)' })).toBeTruthy()
   })
 
   it('accetta espressioni nell’importo e le valuta al submit', () => {

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import AppLayout from './AppLayout'
@@ -108,7 +108,7 @@ describe('AppLayout — FAB contestuale', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nuova spesa' }))
 
     expect(await screen.findByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
-    expect(screen.getByLabelText('Contesto')).toHaveProperty('value', 'personale')
+    expect(screen.getByLabelText('Contesto').textContent).toContain('Personale (tra amici)')
   })
 
   it('sul dettaglio gruppo apre la nuova spesa con il gruppo preselezionato', async () => {
@@ -118,7 +118,8 @@ describe('AppLayout — FAB contestuale', () => {
 
     // Membri del gruppo caricati e tutti selezionati di default.
     expect(await screen.findByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
-    await screen.findByRole('option', { name: 'Gruppo: Vacanze' })
-    expect(screen.getByLabelText('Contesto')).toHaveProperty('value', '5')
+    await waitFor(() =>
+      expect(screen.getByLabelText('Contesto').textContent).toContain('Gruppo: Vacanze'),
+    )
   })
 })

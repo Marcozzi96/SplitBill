@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Select } from '@/components/ui/select'
+import { Select, SelectItem } from '@/components/ui/select'
 import BillForm, { type BillFormValues } from '@/components/BillForm'
 import FriendPicker from '@/components/FriendPicker'
 import { getApiErrorMessage } from '@/api/errors'
@@ -112,16 +112,16 @@ export default function GlobalCreateBillDialog({
               <Select
                 id="billContext"
                 value={context}
-                onChange={(e) => {
-                  setContext(e.target.value)
+                onValueChange={(value) => {
+                  setContext(value)
                   setError(null)
                 }}
               >
-                <option value={PERSONAL}>Personale (tra amici)</option>
+                <SelectItem value={PERSONAL}>Personale (tra amici)</SelectItem>
                 {groups.map((g) => (
-                  <option key={g.groupId} value={g.groupId}>
+                  <SelectItem key={g.groupId} value={String(g.groupId)}>
                     Gruppo: {g.name}
-                  </option>
+                  </SelectItem>
                 ))}
               </Select>
             </Field>

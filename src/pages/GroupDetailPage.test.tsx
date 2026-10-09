@@ -282,7 +282,7 @@ describe('GroupDetailPage', () => {
 
     expect(await screen.findByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
-    expect(screen.getByLabelText('Pagato da')).toHaveProperty('value', '1')
+    expect(screen.getByLabelText('Pagato da').textContent).toContain('mario (Tu)')
 
     fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Cena' } })
     fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '100' } })

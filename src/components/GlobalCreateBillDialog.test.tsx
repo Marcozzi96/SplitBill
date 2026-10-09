@@ -85,7 +85,7 @@ describe('GlobalCreateBillDialog', () => {
     // Il form appare con me e l'amico come partecipanti preselezionati.
     expect(await screen.findByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
-    expect(screen.getByLabelText('Pagato da')).toHaveProperty('value', '1')
+    expect(screen.getByLabelText('Pagato da').textContent).toContain('mario (Tu)')
   })
 
   it('crea una spesa personale senza groupId', async () => {
@@ -112,9 +112,12 @@ describe('GlobalCreateBillDialog', () => {
     mockedPost.mockResolvedValue({ data: { billId: 51 } })
     renderDialog()
 
-    // Attende che i gruppi siano caricati: senza l'option nel DOM la change è ignorata.
-    await screen.findByRole('option', { name: 'Gruppo: Vacanze' })
-    fireEvent.change(screen.getByLabelText('Contesto'), { target: { value: '5' } })
+    // Attende che i gruppi siano caricati: senza la voce nel menu il click è impossibile.
+    fireEvent.click(screen.getByLabelText('Contesto'))
+    const groupOption = await screen.findByRole('option', { name: 'Gruppo: Vacanze' })
+    // Base UI committa la voce al click solo dopo un pointerDown sulla stessa.
+    fireEvent.pointerDown(groupOption)
+    fireEvent.click(groupOption)
 
     // Membri del gruppo caricati dal backend.
     expect(await screen.findByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
@@ -150,7 +153,8 @@ describe('GlobalCreateBillDialog', () => {
 
     expect(await screen.findByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
     expect(mockedGet).toHaveBeenCalledWith('/groups/5/members')
-    await screen.findByRole('option', { name: 'Gruppo: Vacanze' })
-    expect(screen.getByLabelText('Contesto')).toHaveProperty('value', '5')
+    await waitFor(() =>
+      expect(screen.getByLabelText('Contesto').textContent).toContain('Gruppo: Vacanze'),
+    )
   })
 })

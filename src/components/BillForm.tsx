@@ -3,7 +3,7 @@ import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select, SelectItem } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MoneyInput } from '@/components/MoneyInput'
 import { centsToAmountInput, formatEuro, resolveAmountToCents, splitEqually } from '@/lib/money'
@@ -242,14 +242,14 @@ export default function BillForm({
           <FieldLabel htmlFor="billBuyer">Pagato da</FieldLabel>
           <Select
             id="billBuyer"
-            value={buyerId ?? ''}
-            onChange={(e) => setBuyerId(Number(e.target.value))}
+            value={buyerId != null ? String(buyerId) : ''}
+            onValueChange={(value) => setBuyerId(Number(value))}
           >
             {buyerOptions.map((m) => (
-              <option key={m.userId} value={m.userId}>
+              <SelectItem key={m.userId} value={String(m.userId)}>
                 {m.username}
                 {m.userId === user?.userId ? ' (Tu)' : ''}
-              </option>
+              </SelectItem>
             ))}
           </Select>
         </Field>

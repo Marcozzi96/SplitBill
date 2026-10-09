@@ -40,7 +40,10 @@ src/
 ├── auth/           # context utente, route guard, storage token
 ├── components/     # componenti UI riusabili
 │   ├── ui/         # shadcn/ui (stile base-nova: button, input, card, dialog, sonner, field, select, checkbox, ...)
-│   │               # select = <select> nativo ritematizzato (trigger con "▾", menu del SO);
+│   │               # select = custom su @base-ui/react (trigger con "▾", popup ritematizzato
+│   │               #   stile menu curses: riga evidenziata invertita, marcatore ">" sulla selezionata);
+│   │               #   API: <Select value onValueChange> + <SelectItem value>; nei test jsdom si apre
+│   │               #   con fireEvent.click(trigger) e la voce si committa con pointerDown + click
 │   │               # checkbox = <input type="checkbox"> nativo con appearance-none e spunta "✕"
 │   └── AppLayout.tsx  # layout con bottom navigation mobile (4 tab) + FAB "+" contestuale (vedi sotto)
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)

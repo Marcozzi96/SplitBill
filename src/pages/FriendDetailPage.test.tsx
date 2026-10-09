@@ -137,7 +137,7 @@ describe('FriendDetailPage', () => {
     // Di default partecipiamo entrambi e "Pagato da" sono io.
     expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
-    expect(screen.getByLabelText('Pagato da')).toHaveProperty('value', '1')
+    expect(screen.getByLabelText('Pagato da').textContent).toContain('mario (Tu)')
   })
 
   it('crea una spesa personale dal modale, con "Pagato da" l’amico', async () => {
@@ -148,7 +148,11 @@ describe('FriendDetailPage', () => {
     await screen.findByLabelText('Descrizione')
 
     // Ha pagato luigi: il debito è tutto mio.
-    fireEvent.change(screen.getByLabelText('Pagato da'), { target: { value: '2' } })
+    fireEvent.click(screen.getByLabelText('Pagato da'))
+    const buyerOption = await screen.findByRole('option', { name: 'luigi' })
+    // Base UI committa la voce al click solo dopo un pointerDown sulla stessa.
+    fireEvent.pointerDown(buyerOption)
+    fireEvent.click(buyerOption)
     fireEvent.click(screen.getByLabelText('Partecipa luigi'))
     fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Concerto' } })
     fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '50' } })
