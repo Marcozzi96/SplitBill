@@ -14,7 +14,6 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Select, SelectItem } from '@/components/ui/select'
 import BillForm, { type BillFormValues } from '@/components/BillForm'
-import FriendPicker from '@/components/FriendPicker'
 import { getApiErrorMessage } from '@/api/errors'
 import { useCreateBill } from '@/api/hooks/bills'
 import { useFriends } from '@/api/hooks/friends'
@@ -28,8 +27,8 @@ const PERSONAL = 'personale'
 
 // Creazione spesa globale (dal FAB): a differenza di CreateBillDialog il
 // contesto non è dato dalla pagina ma si sceglie qui — un gruppo oppure
-// "personale" (tra amici, con selezione dei partecipanti via FriendPicker).
-// Dal FAB contestuale (dettaglio amico/gruppo) il contesto e gli amici
+// "personale" (tra amici, con selezione di un solo amico tramite Select).
+// Dal FAB contestuale (dettaglio amico/gruppo) il contesto e l'amico
 // partono preselezionati tramite le prop di default.
 export default function GlobalCreateBillDialog({
   open,
@@ -49,27 +48,23 @@ export default function GlobalCreateBillDialog({
   const groupsQuery = useGroups(0)
   const friendsQuery = useFriends(0)
   const [context, setContext] = useState(defaultContext ?? PERSONAL)
-  const [friendIds, setFriendIds] = useState<number[]>(defaultFriendIds ?? [])
+  const [selectedFriendId, setSelectedFriendId] = useState<number | null>(
+    defaultFriendIds?.[0] ?? null,
+  )
   const [error, setError] = useState<string | null>(null)
 
   const groupId = context === PERSONAL ? null : Number(context)
   const groups = groupsQuery.data?.content ?? []
   const friends = friendsQuery.data?.content ?? []
 
-  // Spesa personale: partecipano l'utente corrente e gli amici selezionati.
+  // Spesa personale: partecipano l'utente corrente e un solo amico.
   // A BillForm bastano userId e username del GroupMemberDTO.
   const personalMembers: GroupMemberDTO[] = [
     ...(user?.userId != null ? [{ userId: user.userId, username: user.username }] : []),
     ...friends
-      .filter((f) => f.userId != null && friendIds.includes(f.userId))
+      .filter((f) => f.userId != null && f.userId === selectedFriendId)
       .map((f) => ({ userId: f.userId, username: f.username })),
   ]
-
-  function toggleFriend(userId: number) {
-    setFriendIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
-    )
-  }
 
   function handleSubmit(values: BillFormValues) {
     setError(null)
@@ -128,21 +123,27 @@ export default function GlobalCreateBillDialog({
 
             {groupId == null && (
               <Field>
-                <FieldLabel>Con chi</FieldLabel>
-                <FriendPicker
-                  friends={friends}
-                  selectedIds={friendIds}
-                  onToggle={toggleFriend}
-                  emptyText="Nessun amico: aggiungine uno dalla pagina Amici."
-                />
+                <FieldLabel htmlFor="billFriend">Con chi</FieldLabel>
+                <Select
+                  id="billFriend"
+                  value={selectedFriendId != null ? String(selectedFriendId) : ''}
+                  onValueChange={(value) => setSelectedFriendId(value ? Number(value) : null)}
+                >
+                  <SelectItem value="">Scegli un amico</SelectItem>
+                  {friends.map((f) => (
+                    <SelectItem key={f.userId} value={String(f.userId)}>
+                      {f.username}
+                    </SelectItem>
+                  ))}
+                </Select>
               </Field>
             )}
           </FieldGroup>
 
           {groupId == null ? (
-            friendIds.length === 0 ? (
+            selectedFriendId == null ? (
               <p className="text-muted-foreground py-4 text-center text-sm">
-                Seleziona almeno un amico per continuare.
+                Seleziona un amico per continuare.
               </p>
             ) : friendsQuery.isPending ? (
               // Amici preselezionati (FAB dal dettaglio amico): attendo la lista
@@ -151,10 +152,11 @@ export default function GlobalCreateBillDialog({
                 <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
               </div>
             ) : (
-              // La key cambia con i partecipanti: quote e selezioni ripartono da zero.
+              // La key cambia con l'amico selezionato: quote e selezioni ripartono da zero.
               <BillForm
-                key={`personal-${friendIds.join(',')}`}
+                key={`personal-${selectedFriendId}`}
                 members={personalMembers}
+                personal
                 formId="global-bill-form"
                 submitLabel="Crea spesa"
                 isPending={createMutation.isPending}
@@ -174,7 +176,7 @@ export default function GlobalCreateBillDialog({
         </DialogBody>
         {/* Footer fisso: il bottone submit sta fuori dallo scroll e punta al
             form via attributo form. Visibile solo quando un form è presente. */}
-        {(groupId != null || friendIds.length > 0) && (
+        {(groupId != null || selectedFriendId != null) && (
           <DialogFooter>
             <Button
               type="submit"

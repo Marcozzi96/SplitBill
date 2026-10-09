@@ -206,6 +206,7 @@ export default function FriendDetailPage() {
       <EditBillDialog
         bill={editingBill}
         members={editMembers}
+        personal
         open={editingBill != null}
         onOpenChange={(open) => {
           if (!open) setEditingBill(null)
@@ -218,7 +219,7 @@ export default function FriendDetailPage() {
           if (!open) setDeletingBill(null)
         }}
       />
-      <CreateBillDialog members={editMembers} open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateBillDialog members={editMembers} personal open={createOpen} onOpenChange={setCreateOpen} />
       <RemoveFriendDialog friend={friend} open={removeOpen} onOpenChange={setRemoveOpen} />
     </div>
   )

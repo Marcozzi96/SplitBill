@@ -72,15 +72,18 @@ beforeEach(() => {
 })
 
 describe('GlobalCreateBillDialog', () => {
-  it('in contesto personale richiede almeno un amico prima di mostrare il form', async () => {
+  it('in contesto personale richiede un amico prima di mostrare il form', async () => {
     renderDialog()
 
     expect(
-      await screen.findByText('Seleziona almeno un amico per continuare.'),
+      await screen.findByText('Seleziona un amico per continuare.'),
     ).toBeTruthy()
     expect(screen.queryByLabelText('Descrizione')).toBeNull()
 
-    fireEvent.click(await screen.findByRole('checkbox', { name: /luigi/ }))
+    fireEvent.click(screen.getByLabelText('Con chi'))
+    const option = await screen.findByRole('option', { name: /luigi/ })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
 
     // Il form appare con me e l'amico come partecipanti preselezionati.
     expect(await screen.findByLabelText('Partecipa mario')).toHaveProperty('checked', true)
@@ -92,7 +95,10 @@ describe('GlobalCreateBillDialog', () => {
     mockedPost.mockResolvedValue({ data: { billId: 50 } })
     renderDialog()
 
-    fireEvent.click(await screen.findByRole('checkbox', { name: /luigi/ }))
+    fireEvent.click(screen.getByLabelText('Con chi'))
+    const option = await screen.findByRole('option', { name: /luigi/ })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
     await screen.findByLabelText('Descrizione')
     fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Pizza' } })
     fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '20' } })
@@ -133,6 +139,31 @@ describe('GlobalCreateBillDialog', () => {
         '/bills/new',
         { 1: 50, 2: 50 },
         { params: { description: 'Cena', amount: 100, notes: '', groupId: 5, buyerId: 1 } },
+      ),
+    )
+  })
+
+  it('crea una spesa personale includendo il buyer con quota 0', async () => {
+    mockedPost.mockResolvedValue({ data: { billId: 50 } })
+    renderDialog()
+
+    fireEvent.click(screen.getByLabelText('Con chi'))
+    const option = await screen.findByRole('option', { name: /luigi/ })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+    await screen.findByLabelText('Descrizione')
+
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Pizza' } })
+    fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '20' } })
+    // Solo l'amico è debitore: il buyer (io) ha quota 0.
+    fireEvent.change(screen.getByLabelText('Quota luigi'), { target: { value: '20' } })
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith(
+        '/bills/new',
+        { 1: 0, 2: 20 },
+        { params: { description: 'Pizza', amount: 20, notes: '', buyerId: 1 } },
       ),
     )
   })

@@ -48,6 +48,7 @@ function renderForm(
     bill?: BillDTO
     members?: GroupMemberDTO[]
     groupId?: number
+    personal?: boolean
     onSubmit?: (values: BillFormValues) => void
   } = {},
 ) {
@@ -59,6 +60,7 @@ function renderForm(
           members={props.members ?? members}
           bill={props.bill}
           groupId={props.groupId}
+          personal={props.personal}
           submitLabel="Crea spesa"
           isPending={false}
           onSubmit={onSubmit}
@@ -80,6 +82,36 @@ describe('BillForm', () => {
     expect(screen.getByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa anna')).toHaveProperty('checked', true)
+  })
+
+  it('in spesa personale i partecipanti sono sempre selezionati e non deselezionabili', () => {
+    renderForm({ members: members.slice(0, 2), personal: true })
+
+    const mario = screen.getByLabelText('Partecipa mario')
+    const luigi = screen.getByLabelText('Partecipa luigi')
+    expect(mario).toHaveProperty('checked', true)
+    expect(luigi).toHaveProperty('checked', true)
+    expect(mario).toHaveProperty('disabled', true)
+    expect(luigi).toHaveProperty('disabled', true)
+
+    fireEvent.click(luigi)
+    expect(luigi).toHaveProperty('checked', true)
+  })
+
+  it('in spesa personale include nel payload anche il partecipante con quota 0', () => {
+    const onSubmit = renderForm({ members: members.slice(0, 2), personal: true })
+
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Pizza' } })
+    fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '20' } })
+    // Solo l'amico è debitore: il buyer (io) ha quota 0.
+    fireEvent.change(screen.getByLabelText('Quota luigi'), { target: { value: '20' } })
+    submit()
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sharesCents: { 1: 0, 2: 2000 },
+      }),
+    )
   })
 
   it('"Dividi equamente" divide solo tra i selezionati', () => {

@@ -21,7 +21,7 @@ export interface BillFormValues {
   amountCents: number
   /** Chi ha pagato (default: utente corrente) */
   buyerId: number
-  /** userId -> quota in centesimi (membri deselezionati o con quota zero/vuota esclusi) */
+  /** userId -> quota in centesimi; in gruppo sono esclusi i membri deselezionati o con quota zero/vuota, nelle spese personali sono incluse entrambe le voci (anche a 0) */
   sharesCents: Record<number, number>
   /** Articoli della lista spesa marcati come acquistati con questa spesa */
   shoppingItemIds: number[]
@@ -52,6 +52,7 @@ export default function BillForm({
   members,
   bill,
   groupId,
+  personal,
   formId,
   submitLabel,
   isPending,
@@ -63,6 +64,9 @@ export default function BillForm({
   bill?: BillDTO
   /** Solo in creazione: mostra la sezione "Articoli acquistati" del gruppo. */
   groupId?: number
+  /** Se true, la spesa è personale (tra amici): i partecipanti sono fissi e non
+      deselezionabili. */
+  personal?: boolean
   /** Se presente, il bottone submit NON è renderizzato qui: lo fornisce il
       DialogFooter del chiamante con form={formId} (footer fisso, fuori dallo
       scroll). Senza formId il bottone resta in coda al form (uso standalone). */
@@ -73,6 +77,9 @@ export default function BillForm({
   onSubmit: (values: BillFormValues) => void
 }) {
   const { user } = useAuth()
+  // Nelle spese personali i partecipanti sono fissi (io + un amico) e non possono
+  // essere rimossi dalla ripartizione.
+  const lockedSelection = personal === true
   const [description, setDescription] = useState(bill?.description ?? '')
   const [notes, setNotes] = useState(bill?.notes ?? '')
   const [amount, setAmount] = useState(
@@ -104,6 +111,11 @@ export default function BillForm({
     }
     return new Set(members.filter((m) => !isLocked(m)).map((m) => m.userId!))
   })
+  // In spese personali i partecipanti sono sempre selezionati, indipendentemente
+  // dallo stato della checkbox.
+  const activeSelectedIds = lockedSelection
+    ? new Set(members.filter((m) => !isLocked(m)).map((m) => m.userId!))
+    : selectedIds
   const [localError, setLocalError] = useState<string | null>(null)
   // Chi ha pagato: default l'utente corrente (in modifica, il buyer della spesa).
   const [buyerId, setBuyerId] = useState<number | null>(
@@ -124,7 +136,7 @@ export default function BillForm({
   const amountCents = resolveAmountToCents(amount)
   // Solo i partecipanti selezionati entrano nel conteggio delle quote.
   const parsedShares = members
-    .filter((m) => selectedIds.has(m.userId!))
+    .filter((m) => activeSelectedIds.has(m.userId!))
     .map((m) => ({
       userId: m.userId!,
       cents: resolveAmountToCents(shares[m.userId!] ?? ''),
@@ -134,9 +146,10 @@ export default function BillForm({
 
   // "Pagato da": scegli tra i partecipanti selezionati; il buyer resta
   // selezionabile anche se senza quota (es. ha pagato tutto per un altro).
-  const buyerOptions = members.filter((m) => selectedIds.has(m.userId!) || m.userId === buyerId)
+  const buyerOptions = members.filter((m) => activeSelectedIds.has(m.userId!) || m.userId === buyerId)
 
   function toggleMember(userId: number) {
+    if (lockedSelection) return
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(userId)) next.delete(userId)
@@ -150,12 +163,12 @@ export default function BillForm({
       setLocalError("Inserisci prima un importo valido")
       return
     }
-    if (selectedIds.size === 0) {
+    if (activeSelectedIds.size === 0) {
       setLocalError('Seleziona almeno un partecipante')
       return
     }
     setLocalError(null)
-    const selectedMembers = members.filter((m) => selectedIds.has(m.userId!))
+    const selectedMembers = members.filter((m) => activeSelectedIds.has(m.userId!))
     const parts = splitEqually(amountCents, selectedMembers.length)
     const next: Record<number, string> = {}
     selectedMembers.forEach((m, i) => {
@@ -176,7 +189,7 @@ export default function BillForm({
       setLocalError('Inserisci un importo valido (es. 42,50)')
       return
     }
-    if (selectedIds.size === 0) {
+    if (activeSelectedIds.size === 0) {
       setLocalError('Seleziona almeno un partecipante')
       return
     }
@@ -198,7 +211,13 @@ export default function BillForm({
 
     const sharesCents: Record<number, number> = {}
     for (const s of parsedShares) {
-      if (s.cents !== null && s.cents > 0) sharesCents[s.userId] = s.cents
+      if (personal) {
+        // Spese personali: il backend richiede esattamente 2 partecipanti distinti
+        // (buyer incluso), quindi inviamo sempre entrambe le voci, anche a quota 0.
+        sharesCents[s.userId] = s.cents ?? 0
+      } else if (s.cents !== null && s.cents > 0) {
+        sharesCents[s.userId] = s.cents
+      }
     }
     onSubmit({
       description: description.trim(),
@@ -266,19 +285,19 @@ export default function BillForm({
           </div>
           <div className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
             {members.map((member) => {
-              const selected = selectedIds.has(member.userId!)
+              const selected = activeSelectedIds.has(member.userId!)
               const locked = isLocked(member)
               return (
                 <div key={member.userId} className="flex items-center gap-2">
                   <label
                     className={cn(
                       'flex min-h-11 min-w-0 items-center gap-2',
-                      locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                      locked || lockedSelection ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
                     )}
                   >
                     <Checkbox
                       checked={selected}
-                      disabled={locked}
+                      disabled={locked || lockedSelection}
                       onChange={() => toggleMember(member.userId!)}
                       aria-label={`Partecipa ${member.username}`}
                     />

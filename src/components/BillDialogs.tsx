@@ -28,12 +28,15 @@ type GroupMemberDTO = components['schemas']['GroupMemberDTO']
 export function CreateBillDialog({
   members,
   groupId,
+  personal,
   open,
   onOpenChange,
 }: {
   members: GroupMemberDTO[]
   /** Se assente, la spesa è personale (tra amici). */
   groupId?: number
+  /** Se true, i partecipanti sono fissi e non deselezionabili. */
+  personal?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -77,6 +80,7 @@ export function CreateBillDialog({
           <BillForm
             members={members}
             groupId={groupId}
+            personal={personal}
             formId="create-bill-form"
             submitLabel="Crea spesa"
             isPending={createMutation.isPending}
@@ -104,6 +108,7 @@ export function CreateBillDialog({
 export function EditBillDialog({
   bill,
   members,
+  personal,
   open,
   onOpenChange,
 }: {
@@ -111,6 +116,8 @@ export function EditBillDialog({
       durante l'animazione di chiusura (vedi useRetained). */
   bill: BillDTO | null
   members: GroupMemberDTO[]
+  /** Se true, i partecipanti sono fissi e non deselezionabili. */
+  personal?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -122,6 +129,7 @@ export function EditBillDialog({
       key={openCount}
       bill={active}
       members={members}
+      personal={personal}
       open={open}
       onOpenChange={onOpenChange}
     />
@@ -131,11 +139,13 @@ export function EditBillDialog({
 function EditBillDialogContent({
   bill,
   members,
+  personal,
   open,
   onOpenChange,
 }: {
   bill: BillDTO
   members: GroupMemberDTO[]
+  personal?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -177,6 +187,7 @@ function EditBillDialogContent({
           <BillForm
             members={members}
             bill={bill}
+            personal={personal}
             formId="edit-bill-form"
             submitLabel="Salva"
             isPending={updateMutation.isPending}

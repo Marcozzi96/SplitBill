@@ -153,17 +153,16 @@ describe('FriendDetailPage', () => {
     // Base UI committa la voce al click solo dopo un pointerDown sulla stessa.
     fireEvent.pointerDown(buyerOption)
     fireEvent.click(buyerOption)
-    fireEvent.click(screen.getByLabelText('Partecipa luigi'))
     fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Concerto' } })
     fireEvent.change(screen.getByLabelText('Importo (€)'), { target: { value: '50' } })
     fireEvent.change(screen.getByLabelText('Quota mario'), { target: { value: '50' } })
     fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
 
-    // Spesa personale: niente groupId nei params.
+    // Spesa personale: niente groupId nei params; il buyer (luigi) è incluso con quota 0.
     await waitFor(() =>
       expect(mockedPost).toHaveBeenCalledWith(
         '/bills/new',
-        { 1: 50 },
+        { 1: 50, 2: 0 },
         { params: { description: 'Concerto', amount: 50, notes: '', buyerId: 2 } },
       ),
     )
