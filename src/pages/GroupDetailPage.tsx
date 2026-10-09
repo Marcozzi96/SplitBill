@@ -135,7 +135,7 @@ function GroupDetailBody({
           variant="outline"
           size="icon"
           aria-label="Torna ai gruppi"
-          onClick={() => navigate('/groups')}
+          onClick={() => navigate('/groups', { replace: true })}
         >
           <ArrowLeft />
         </Button>
@@ -844,7 +844,7 @@ function DeleteGroupDialog({
       {
         onSuccess: () => {
           toast.success('Gruppo eliminato')
-          navigate('/groups')
+          navigate('/groups', { replace: true })
         },
         onError: async (err) => {
           // 409: debiti pendenti — li carichiamo e li mostriamo prima del retry forzato.
@@ -946,7 +946,7 @@ function LeaveGroupDialog({
     leaveMutation.mutate(groupId, {
       onSuccess: () => {
         toast.success('Sei uscito dal gruppo')
-        navigate('/groups')
+        navigate('/groups', { replace: true })
       },
       onError: (err) => setError(getApiErrorMessage(err)),
     })

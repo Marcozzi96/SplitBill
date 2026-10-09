@@ -90,7 +90,7 @@ export default function StatusPage() {
           variant="outline"
           size="icon"
           aria-label="Torna alle impostazioni"
-          onClick={() => navigate('/settings')}
+          onClick={() => navigate('/settings', { replace: true })}
         >
           <ArrowLeft />
         </Button>

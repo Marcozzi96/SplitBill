@@ -75,7 +75,7 @@ export default function FriendDetailPage() {
             variant="outline"
             size="icon"
             aria-label="Torna agli amici"
-            onClick={() => navigate('/friends')}
+            onClick={() => navigate('/friends', { replace: true })}
           >
             <ArrowLeft />
           </Button>
@@ -111,7 +111,7 @@ export default function FriendDetailPage() {
           variant="outline"
           size="icon"
           aria-label="Torna agli amici"
-          onClick={() => navigate('/friends')}
+          onClick={() => navigate('/friends', { replace: true })}
         >
           <ArrowLeft />
         </Button>
@@ -244,7 +244,7 @@ function RemoveFriendDialog({
     cancelMutation.mutate(friend.userId, {
       onSuccess: () => {
         toast.success('Amico rimosso')
-        navigate('/friends')
+        navigate('/friends', { replace: true })
       },
       onError: (err) => toast.error(getApiErrorMessage(err)),
     })

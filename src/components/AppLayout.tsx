@@ -81,8 +81,12 @@ export default function AppLayout() {
         <ul className="mx-auto flex max-w-lg">
           {NAV_ITEMS.map(({ to, label, icon: Icon, ...rest }) => (
             <li key={to} className="flex-1">
+              {/* replace: i tab principali non si accumulano nella cronologia,
+                  così il pulsante indietro da un tab senza popup aperti esce
+                  dall'app invece di scorrere i tab visitati (stile nativo). */}
               <NavLink
                 to={to}
+                replace
                 {...('end' in rest ? { end: true } : {})}
                 className={({ isActive }) =>
                   cn(
