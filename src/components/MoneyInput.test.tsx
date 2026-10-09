@@ -98,4 +98,43 @@ describe('MoneyInput', () => {
 
     expect(input().value).toBe('(2+3)')
   })
+
+  it('lo schermino del tastierino mostra il valore mentre si digita', () => {
+    render(<TestHost />)
+
+    fireEvent.focus(input())
+    fireEvent.click(screen.getByRole('button', { name: '7' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Virgola' }))
+    fireEvent.click(screen.getByRole('button', { name: '5' }))
+
+    const display = screen.getByText(
+      (_, el) => el?.tagName === 'P' && el.className.includes('font-crt'),
+    )
+    expect(display.textContent).toContain('7,5')
+  })
+
+  it('il tap su una cifra dello schermino sposta il cursore', () => {
+    render(<TestHost initial="12" />)
+
+    fireEvent.focus(input())
+    const displayDigit = screen
+      .getAllByText('1')
+      .find((el) => el.tagName === 'SPAN') as HTMLElement
+    fireEvent.click(displayDigit)
+    fireEvent.click(screen.getByRole('button', { name: '9' }))
+
+    expect(input().value).toBe('192')
+  })
+
+  it('lo schermino mostra il risultato di un’espressione in anteprima', () => {
+    render(<TestHost initial="12,50 + 3" />)
+
+    fireEvent.focus(input())
+
+    const previews = screen.getAllByText((_, el) =>
+      el?.tagName === 'P' && (el.textContent ?? '').startsWith('=') &&
+      (el.textContent ?? '').includes('15,50'),
+    )
+    expect(previews.length).toBeGreaterThan(0)
+  })
 })

@@ -63,8 +63,12 @@ src/
 │   # GoogleLoginButton.tsx: bottone "Continua con Google" (Login/Register), visibile solo se VITE_GOOGLE_CLIENT_ID è valorizzata
 │   # ReleasesCard.tsx: card "Ultimi rilasci" della StatusPage (ultimi 5 commit di main dei repo GitHub backend/frontend)
 │   # MoneyInput.tsx + NumericKeypad.tsx: input monetario con tastierino "calcolatrice" custom stile Satispay,
-│   #   mostrato come pop-up ancorato al campo (portal su body, flip sopra/sotto). Tasti: cifre 1-2-3 in alto,
-│   #   ", 0 ⌫" in fondo, operatori + − × ÷ rossi a destra; riga finale "( ) = Fine".
+│   #   mostrato come bottom sheet fisso in fondo allo schermo (portal su body, senza backdrop: il tap su
+│   #   un altro campo sposta subito il focus, la chiusura è affidata a blur / "Fine" / Esc). In cima allo
+│   #   sheet uno schermino CRT interattivo (VT323 + glow, cursore reale lampeggiante, tap sulle cifre per
+│   #   spostare il caret) mostra il valore digitato e il risultato delle espressioni, perché il campo
+│   #   editato può finire coperto dallo sheet.
+│   #   Tasti: cifre 1-2-3 in alto, ", 0 ⌫" in fondo, operatori + − × ÷ rossi a destra; riga finale "( ) = Fine".
 ├── lib/            # utilità condivise (cn, money.ts per importi in centesimi, bytes.ts per quantità di byte, ...) — alias import '@/...'
 ├── pages/          # una pagina per schermata (Home = bilanci globali con tab Aperti/Cronologia; StatusPage = monitoraggio server su /status, raggiungibile dalle Impostazioni; vedi progettazione-fe.md §4)
 ├── router.tsx
@@ -85,7 +89,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **401**: gestito dall'interceptor in `src/api/client.ts` (svuota token, redirect a `/login`). Non duplicare la logica.
 - **429** (rate limit su `/auth/**`): mostrare "Troppe richieste, riprovare tra poco".
 - **Errori API**: body `{ timestamp, status, error, message }` → mostrare `message` all'utente (già in italiano).
-- **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400). Tutti gli input monetari usano `MoneyInput` (`inputMode="none"` + tastierino custom in pop-up al focus, con portal su body perché il Dialog ha `overflow-hidden` e transform); i campi accettano espressioni anche con parentesi ("(12,50 + 3) × 2"), risolte da "=" / blur / submit via `resolveAmountToCents` in `lib/money.ts` (mai `parseAmountToCents` su input utente).
+- **Importi**: 2 decimali; la somma delle quote di una spesa deve pareggiare esattamente l'importo prima dell'invio (il backend rifiuta con 400). Tutti gli input monetari usano `MoneyInput` (`inputMode="none"` + tastierino custom in bottom sheet fisso in basso al focus, con portal su body perché il Dialog ha `overflow-hidden` e transform); i campi accettano espressioni anche con parentesi ("(12,50 + 3) × 2"), risolte da "=" / blur / submit via `resolveAmountToCents` in `lib/money.ts` (mai `parseAmountToCents` su input utente).
 - **FAB "+"**: contestuale alla rotta (in `AppLayout.tsx`) — Home/Impostazioni: nuova spesa con scelta del contesto; `/friends`: nuova richiesta di amicizia; `/friends/:userId`: nuova spesa personale con quell'amico preselezionato; `/groups`: nuovo gruppo; `/groups/:groupId`: nuova spesa con quel gruppo preselezionato.
 - **Dialog pilotati da stato nullable** (es. la spesa in modifica): mai montarli condizionatamente (`{bill && <Dialog …>}`) — smonterebbero il Root prima dell'animazione di chiusura. Il dialog resta sempre montato con `open={bill != null}` e usa `useRetained` + `useOpenCount` da `src/lib/useRetained.ts` (contenuto interno con `key={openCount}` per resettare i form a ogni apertura).
 - **Spese**: i dati viaggiano come **query params** (`description`, `amount`, `notes`, `groupId`, `buyerId`), la ripartizione nel **body** come `{ "userId": importo }`. Vale per `POST /bills/new` e `PUT /bills/{id}`. `groupId` è opzionale in creazione: senza gruppo la spesa è personale (tra amici) e si elenca nel dettaglio amico via `GET /bills/getMyPersonalBills?friendId=` (hook `useMyPersonalBills`, filtro lato server: paginazione coerente). `buyerId` è opzionale ("Pagato da"): default l'utente autenticato in creazione, il buyer attuale in modifica.
