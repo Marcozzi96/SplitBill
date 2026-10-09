@@ -9,6 +9,7 @@ import {
   EXPRESSION_OPERATOR_REGEX,
 } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { useBackClose } from '@/lib/useBackClose'
 
 // Altezza approssimativa del tastierino: serve a decidere se il campo attivo
 // va fatto scorrere in vista per non finire coperto dal bottom sheet.
@@ -20,7 +21,8 @@ const KEYPAD_HEIGHT = 450
 // (portal su document.body: il Dialog ha overflow-hidden e transform, uno sheet
 // interno verrebbe tagliato/disancorato). Posizione sempre identica, come la
 // tastiera di sistema; senza backdrop, così il tap su un altro campo sposta
-// subito il focus (la chiusura resta affidata al blur). In cima allo sheet uno
+// subito il focus (la chiusura resta affidata al blur, a "Fine", a Esc e al
+// pulsante indietro del telefono — useBackClose). In cima allo sheet uno
 // schermino stile calcolatrice CRT (font VT323 + glow) mostra il valore mentre
 // si digita, visto che il campo editato può finire coperto dallo sheet. Su
 // desktop la tastiera fisica continua a funzionare normalmente. Se il valore è
@@ -69,6 +71,10 @@ export function MoneyInput({
   function closeKeypad() {
     setKeypadOpen(false)
   }
+
+  // Sul telefono il pulsante indietro chiude il tastierino (layer più in alto)
+  // invece di navigare; il campo resta in focus, pronto per essere riaperto.
+  useBackClose(keypadOpen, closeKeypad)
 
   function resolveExpression() {
     if (!isExpression) return

@@ -53,18 +53,25 @@ describe('evaluateMoneyExpression', () => {
     expect(evaluateMoneyExpression('() + 1')).toBeNull()
   })
 
+  it('supporta il segno unario (anche dopo un operatore o una parentesi)', () => {
+    expect(evaluateMoneyExpression('45×-1')).toBe(-4500)
+    expect(evaluateMoneyExpression('-3 + 10')).toBe(700)
+    expect(evaluateMoneyExpression('2 × -(3 + 1)')).toBe(-800)
+    expect(evaluateMoneyExpression('+ 1')).toBe(100)
+    expect(evaluateMoneyExpression('1 ++ 2')).toBe(300)
+    expect(evaluateMoneyExpression('61,00+45×-1×(3-1)')).toBe(-2900)
+  })
+
   it('rifiuta espressioni malformate', () => {
     expect(evaluateMoneyExpression('')).toBeNull()
     expect(evaluateMoneyExpression('1 +')).toBeNull()
-    expect(evaluateMoneyExpression('+ 1')).toBeNull()
-    expect(evaluateMoneyExpression('1 ++ 2')).toBeNull()
+    expect(evaluateMoneyExpression('1 +× 2')).toBeNull()
     expect(evaluateMoneyExpression('1,2,3 + 1')).toBeNull()
     expect(evaluateMoneyExpression('10')).toBeNull() // non è un'espressione
   })
 
-  it('rifiuta divisione per zero e risultati negativi', () => {
+  it('rifiuta la divisione per zero', () => {
     expect(evaluateMoneyExpression('10 ÷ 0')).toBeNull()
-    expect(evaluateMoneyExpression('3 − 5')).toBeNull()
   })
 })
 
@@ -73,6 +80,12 @@ describe('resolveAmountToCents', () => {
     expect(resolveAmountToCents('12,50')).toBe(1250)
     expect(resolveAmountToCents('12,50 + 3')).toBe(1550)
     expect(resolveAmountToCents('non valido')).toBeNull()
+  })
+
+  it('rifiuta i risultati negativi (un importo non può esserlo)', () => {
+    expect(resolveAmountToCents('3 − 5')).toBeNull()
+    expect(resolveAmountToCents('61,00+45×-1×(3-1)')).toBeNull()
+    expect(resolveAmountToCents('-29,00')).toBeNull()
   })
 })
 

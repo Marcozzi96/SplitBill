@@ -2,12 +2,24 @@
 
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { createChangeEventDetails } from "@base-ui/react/internals/createBaseUIEventDetails"
+import { REASONS } from "@base-ui/react/internals/reasons"
 
 import { cn } from "@/lib/utils"
+import { useBackClose } from "@/lib/useBackClose"
 import { Button } from "@/components/ui/button"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+function Dialog({ onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  // Il pulsante indietro del telefono chiude il dialog invece di navigare
+  // indietro nella cronologia (pila condivisa: si chiude sempre il layer più
+  // in alto, es. il tastierino del MoneyInput aperto sopra un dialog).
+  useBackClose(props.open ?? false, () => {
+    onOpenChange?.(false, {
+      ...createChangeEventDetails(REASONS.none),
+      preventUnmountOnClose: () => {},
+    })
+  })
+  return <DialogPrimitive.Root data-slot="dialog" onOpenChange={onOpenChange} {...props} />
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {

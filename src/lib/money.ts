@@ -77,9 +77,11 @@ function tokenizeExpression(text: string): Token[] | null {
 }
 
 // Valuta un'espressione monetaria tipo "(12,50 + 3) × 2" -> centesimi (null se
-// malformata, divisione per zero o risultato negativo). Precedenza standard con
-// supporto delle parentesi, niente eval. Ogni operando ha al massimo 2
-// decimali; il risultato finale è arrotondato ai centesimi.
+// malformata o divisione per zero). Precedenza standard con supporto delle
+// parentesi e del segno unario ("45×-1", "-(3+2)"), niente eval. Ogni operando
+// ha al massimo 2 decimali; il risultato finale è arrotondato ai centesimi e
+// può essere negativo (il rifiuto degli importi negativi è competenza di
+// resolveAmountToCents).
 export function evaluateMoneyExpression(value: string): number | null {
   const text = value.trim().replace(/,/g, '.')
   if (text === '') return null
@@ -121,6 +123,14 @@ export function evaluateMoneyExpression(value: string): number | null {
 
   function parseFactor(): number | null {
     const token = tokens[pos]
+    // Segno unario: valido ovunque sia atteso un operando (inizio espressione,
+    // dopo un operatore o dopo una parentesi aperta), es. "45×-1" o "-(3+2)".
+    if (token?.type === 'op' && (token.op === '-' || token.op === '+')) {
+      pos++
+      const value = parseFactor()
+      if (value === null) return null
+      return token.op === '-' ? -value : value
+    }
     if (token?.type === 'num') {
       pos++
       return token.value
@@ -137,13 +147,15 @@ export function evaluateMoneyExpression(value: string): number | null {
 
   const result = parseExpression()
   if (result === null || pos !== tokens.length) return null
-  if (!Number.isFinite(result) || result < 0) return null
+  if (!Number.isFinite(result)) return null
   return Math.round(result * 100)
 }
 
 // Come parseAmountToCents, ma accetta anche espressioni ("10 + 2,50").
+// Un importo non può essere negativo: i risultati negativi sono rifiutati qui.
 export function resolveAmountToCents(value: string): number | null {
-  return parseAmountToCents(value) ?? evaluateMoneyExpression(value)
+  const cents = parseAmountToCents(value) ?? evaluateMoneyExpression(value)
+  return cents !== null && cents >= 0 ? cents : null
 }
 
 // 1550 centesimi -> "15,50" (formato usato negli input monetari).

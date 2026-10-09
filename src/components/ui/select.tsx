@@ -4,6 +4,7 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
+import { useBackClose } from "@/lib/useBackClose"
 
 // Select custom su Base UI: il menu è interamente ritematizzato come un menu
 // curses (riga evidenziata invertita verde/blu-nero, marcatore ">" sulla voce
@@ -35,11 +36,18 @@ function Select({
     }
   })
 
+  // Apertura controllata internamente: il pulsante indietro del telefono deve
+  // poter chiudere il popup senza navigare (come per i Dialog).
+  const [open, setOpen] = React.useState(false)
+  useBackClose(open, () => setOpen(false))
+
   return (
     <SelectPrimitive.Root
       items={items}
       value={value === "" || value == null ? null : value}
       onValueChange={(v) => onValueChange?.(v == null ? "" : String(v))}
+      open={open}
+      onOpenChange={setOpen}
       disabled={disabled}
     >
       <SelectPrimitive.Trigger
