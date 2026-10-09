@@ -40,6 +40,8 @@ export default function AppLayout() {
     : isGroupsList
       ? 'Nuovo gruppo'
       : 'Nuova spesa'
+  // Etichetta breve mostrata nel FAB (l'aria-label resta quella completa).
+  const fabShortLabel = isFriendsList ? 'amico' : isGroupsList ? 'gruppo' : 'spesa'
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -52,12 +54,12 @@ export default function AppLayout() {
       </main>
       {/* FAB contestuale: azione di creazione principale della schermata. */}
       <Button
-        size="icon"
         aria-label={fabLabel}
-        className="fixed right-4 bottom-20 z-40 size-14 shadow-lg dark:shadow-[0_0_22px_rgb(52_211_153/0.35)]"
+        className="ring-primary/60 fixed right-4 bottom-20 z-40 h-14 w-auto gap-1.5 rounded-lg px-4 text-sm font-bold shadow-lg ring-1 dark:shadow-[0_0_22px_rgb(52_211_153/0.35)]"
         onClick={() => setCreateOpen(true)}
       >
-        <Plus className="size-6" />
+        <Plus className="size-5" />
+        {fabShortLabel}
       </Button>
       {isFriendsList ? (
         <SendFriendRequestDialog open={createOpen} onOpenChange={setCreateOpen} />

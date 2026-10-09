@@ -17,6 +17,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/MoneyInput'
 import { formatEuro, resolveAmountToCents } from '@/lib/money'
+import { useOpenCount, useRetained } from '@/lib/useRetained'
 import { getApiErrorMessage } from '@/api/errors'
 import { useCreatePayment, useForgiveDebt } from '@/api/hooks/balance'
 import type { components } from '@/api/types'
@@ -146,15 +147,13 @@ export function SettlementList({
           </CardContent>
         </Card>
       ))}
-      {deletedSettlement && (
-        <DeletedUserDialog
-          settlement={deletedSettlement}
-          open
-          onOpenChange={(open) => {
-            if (!open) setDeletedSettlement(null)
-          }}
-        />
-      )}
+      <DeletedUserDialog
+        settlement={deletedSettlement}
+        open={deletedSettlement != null}
+        onOpenChange={(open) => {
+          if (!open) setDeletedSettlement(null)
+        }}
+      />
     </div>
   )
 }
@@ -164,6 +163,30 @@ export function SettlementList({
 // (l'eliminato deve soldi a me) il creditore può "dimenticare" l'intero debito:
 // il backend lo estingue con un Payment automatico (400/404 → messaggio dal backend).
 function DeletedUserDialog({
+  settlement,
+  open,
+  onOpenChange,
+}: {
+  /** Settlement con controparte eliminata; null a dialog chiuso. Il contenuto
+      resta montato durante l'animazione di chiusura (vedi useRetained). */
+  settlement: UserSettlementDTO | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const active = useRetained(settlement)
+  const openCount = useOpenCount(open)
+  if (!active) return null
+  return (
+    <DeletedUserDialogContent
+      key={openCount}
+      settlement={active}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function DeletedUserDialogContent({
   settlement,
   open,
   onOpenChange,
@@ -228,6 +251,30 @@ function DeletedUserDialog({
 // Il backend rifiuta con 409 se supera il debito effettivo: il messaggio
 // arriva dal backend ed è mostrato nel dialog.
 export function PaySettlementDialog({
+  settlement,
+  open,
+  onOpenChange,
+}: {
+  /** Settlement da rimborsare; null a dialog chiuso. Il contenuto resta
+      montato durante l'animazione di chiusura (vedi useRetained). */
+  settlement: UserSettlementDTO | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const active = useRetained(settlement)
+  const openCount = useOpenCount(open)
+  if (!active) return null
+  return (
+    <PaySettlementDialogContent
+      key={openCount}
+      settlement={active}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function PaySettlementDialogContent({
   settlement,
   open,
   onOpenChange,

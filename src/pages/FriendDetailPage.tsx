@@ -203,26 +203,21 @@ export default function FriendDetailPage() {
         }}
         resolveUsername={resolveUsername}
       />
-      {editingBill && (
-        <EditBillDialog
-          key={editingBill.billId}
-          bill={editingBill}
-          members={editMembers}
-          open
-          onOpenChange={(open) => {
-            if (!open) setEditingBill(null)
-          }}
-        />
-      )}
-      {deletingBill && (
-        <DeleteBillDialog
-          bill={deletingBill}
-          open
-          onOpenChange={(open) => {
-            if (!open) setDeletingBill(null)
-          }}
-        />
-      )}
+      <EditBillDialog
+        bill={editingBill}
+        members={editMembers}
+        open={editingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setEditingBill(null)
+        }}
+      />
+      <DeleteBillDialog
+        bill={deletingBill}
+        open={deletingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingBill(null)
+        }}
+      />
       <CreateBillDialog members={editMembers} open={createOpen} onOpenChange={setCreateOpen} />
       <RemoveFriendDialog friend={friend} open={removeOpen} onOpenChange={setRemoveOpen} />
     </div>

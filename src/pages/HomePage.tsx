@@ -117,16 +117,13 @@ export default function HomePage() {
         </TabsContent>
       </Tabs>
 
-      {paying && (
-        <PaySettlementDialog
-          key={`${paying.counterparty?.userId}-${paying.groupId ?? 'personale'}`}
-          settlement={paying}
-          open
-          onOpenChange={(open) => {
-            if (!open) setPaying(null)
-          }}
-        />
-      )}
+      <PaySettlementDialog
+        settlement={paying}
+        open={paying != null}
+        onOpenChange={(open) => {
+          if (!open) setPaying(null)
+        }}
+      />
     </div>
   )
 }

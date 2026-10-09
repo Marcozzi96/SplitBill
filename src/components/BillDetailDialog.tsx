@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { formatEuro } from '@/lib/money'
+import { useRetained } from '@/lib/useRetained'
 import { cn } from '@/lib/utils'
 import type { components } from '@/api/types'
 
@@ -60,12 +61,15 @@ export default function BillDetailDialog({
   onOpenChange: (open: boolean) => void
   resolveUsername: (userId: number) => string
 }) {
-  if (!bill) return null
+  // Trattiene l'ultima spesa a dialog chiuso, così il Root resta montato e
+  // Base UI può eseguire l'animazione di chiusura.
+  const active = useRetained(bill)
+  if (!active) return null
 
-  const isGroup = bill.groupId != null
-  const transactions = bill.transactions ?? []
+  const isGroup = active.groupId != null
+  const transactions = active.transactions ?? []
   const totalShares = transactions.reduce(
-    (sum, t) => sum + shareOf(bill, t.userId, t.amount),
+    (sum, t) => sum + shareOf(active, t.userId, t.amount),
     0,
   )
 
@@ -84,9 +88,9 @@ export default function BillDetailDialog({
               <Receipt className="size-6" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="truncate">{bill.description}</DialogTitle>
+              <DialogTitle className="truncate">{active.description}</DialogTitle>
               <DialogDescription>
-                {formatDate(bill.creationDate)} · {isGroup ? 'Gruppo' : 'Personale'}
+                {formatDate(active.creationDate)} · {isGroup ? 'Gruppo' : 'Personale'}
               </DialogDescription>
             </div>
           </div>
@@ -95,31 +99,31 @@ export default function BillDetailDialog({
           <div className="flex flex-col gap-4">
             <div className="bg-muted/60 rounded-2xl px-4 py-5 text-center">
               <p className="text-muted-foreground text-sm">Importo totale</p>
-              <p className="text-3xl font-bold tracking-tight">{formatEuro(bill.amount)}</p>
+              <p className="text-3xl font-bold tracking-tight">{formatEuro(active.amount)}</p>
             </div>
             <div className="flex items-center gap-3">
-              <InitialAvatar name={bill.buyer?.username ?? ''} />
+              <InitialAvatar name={active.buyer?.username ?? ''} />
               <div className="min-w-0">
                 <p className="text-muted-foreground text-sm">Pagato da</p>
-                <p className="truncate font-medium">{bill.buyer?.username}</p>
+                <p className="truncate font-medium">{active.buyer?.username}</p>
               </div>
             </div>
-            {bill.notes && (
+            {active.notes && (
               <div className="bg-muted/60 rounded-xl p-3">
                 <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <StickyNote aria-hidden className="size-4" />
                   Note
                 </p>
-                <p className="mt-1 text-sm whitespace-pre-wrap">{bill.notes}</p>
+                <p className="mt-1 text-sm whitespace-pre-wrap">{active.notes}</p>
               </div>
             )}
-            {bill.purchasedItems && (
+            {active.purchasedItems && (
               <div className="bg-muted/60 rounded-xl p-3">
                 <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <ShoppingCart aria-hidden className="size-4" />
                   Articoli acquistati
                 </p>
-                <p className="mt-1 text-sm">{bill.purchasedItems}</p>
+                <p className="mt-1 text-sm">{active.purchasedItems}</p>
               </div>
             )}
             {transactions.length > 0 && (
@@ -143,7 +147,7 @@ export default function BillDetailDialog({
                           <span className="min-w-0 truncate font-medium">{name}</span>
                         </span>
                         <span className="shrink-0 font-semibold">
-                          {formatEuro(shareOf(bill, t.userId, t.amount))}
+                          {formatEuro(shareOf(active, t.userId, t.amount))}
                         </span>
                       </li>
                     )

@@ -24,6 +24,7 @@ import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components
 import ShoppingListDialog from '@/components/ShoppingListDialog'
 import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
 import { netBalanceClass } from '@/lib/money'
+import { useOpenCount, useRetained } from '@/lib/useRetained'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
 import { useFriends, useSendFriendshipRequest } from '@/api/hooks/friends'
@@ -313,16 +314,13 @@ function GroupSettlementsDialogBody({ settlements }: { settlements: UserSettleme
   return (
     <>
       <SettlementList settlements={settlements} onPay={setPaying} />
-      {paying && (
-        <PaySettlementDialog
-          key={`${paying.counterparty?.userId}-${paying.groupId ?? 'personale'}`}
-          settlement={paying}
-          open
-          onOpenChange={(open) => {
-            if (!open) setPaying(null)
-          }}
-        />
-      )}
+      <PaySettlementDialog
+        settlement={paying}
+        open={paying != null}
+        onOpenChange={(open) => {
+          if (!open) setPaying(null)
+        }}
+      />
     </>
   )
 }
@@ -403,18 +401,15 @@ function MembersDialog({
         </DialogContent>
       </Dialog>
 
-      {requestTarget && (
-        <MemberFriendRequestDialog
-          key={requestTarget.userId}
-          member={requestTarget}
-          groupId={groupId}
-          groupName={groupName}
-          open
-          onOpenChange={(open) => {
-            if (!open) setRequestTarget(null)
-          }}
-        />
-      )}
+      <MemberFriendRequestDialog
+        member={requestTarget}
+        groupId={groupId}
+        groupName={groupName}
+        open={requestTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setRequestTarget(null)
+        }}
+      />
     </>
   )
 }
@@ -422,6 +417,36 @@ function MembersDialog({
 // --- Dialog: richiesta di amicizia a un membro del gruppo ---
 
 function MemberFriendRequestDialog({
+  member,
+  groupId,
+  groupName,
+  open,
+  onOpenChange,
+}: {
+  /** Membro destinatario della richiesta; null a dialog chiuso. Il contenuto
+      resta montato durante l'animazione di chiusura (vedi useRetained). */
+  member: GroupMemberDTO | null
+  groupId: number
+  groupName: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const active = useRetained(member)
+  const openCount = useOpenCount(open)
+  if (!active) return null
+  return (
+    <MemberFriendRequestDialogContent
+      key={openCount}
+      member={active}
+      groupId={groupId}
+      groupName={groupName}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function MemberFriendRequestDialogContent({
   member,
   groupId,
   groupName,
@@ -615,26 +640,21 @@ function GroupBills({
         }}
         resolveUsername={resolveUsername}
       />
-      {editingBill && (
-        <EditBillDialog
-          key={editingBill.billId}
-          bill={editingBill}
-          members={members}
-          open
-          onOpenChange={(open) => {
-            if (!open) setEditingBill(null)
-          }}
-        />
-      )}
-      {deletingBill && (
-        <DeleteBillDialog
-          bill={deletingBill}
-          open
-          onOpenChange={(open) => {
-            if (!open) setDeletingBill(null)
-          }}
-        />
-      )}
+      <EditBillDialog
+        bill={editingBill}
+        members={members}
+        open={editingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setEditingBill(null)
+        }}
+      />
+      <DeleteBillDialog
+        bill={deletingBill}
+        open={deletingBill != null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingBill(null)
+        }}
+      />
     </>
   )
 }

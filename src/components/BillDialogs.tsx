@@ -14,6 +14,7 @@ import { FieldError } from '@/components/ui/field'
 import BillForm, { type BillFormValues } from '@/components/BillForm'
 import { getApiErrorMessage } from '@/api/errors'
 import { useDeleteBill, useUpdateBill, useCreateBill } from '@/api/hooks/bills'
+import { useOpenCount, useRetained } from '@/lib/useRetained'
 import type { components } from '@/api/types'
 
 type BillDTO = components['schemas']['BillDTO']
@@ -106,6 +107,33 @@ export function EditBillDialog({
   open,
   onOpenChange,
 }: {
+  /** Spesa da modificare; null a dialog chiuso. Il contenuto resta montato
+      durante l'animazione di chiusura (vedi useRetained). */
+  bill: BillDTO | null
+  members: GroupMemberDTO[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const active = useRetained(bill)
+  const openCount = useOpenCount(open)
+  if (!active) return null
+  return (
+    <EditBillDialogContent
+      key={openCount}
+      bill={active}
+      members={members}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function EditBillDialogContent({
+  bill,
+  members,
+  open,
+  onOpenChange,
+}: {
   bill: BillDTO
   members: GroupMemberDTO[]
   open: boolean
@@ -173,6 +201,30 @@ export function EditBillDialog({
 
 // Eliminazione spesa: stesse regole della modifica (membri del gruppo / coinvolti).
 export function DeleteBillDialog({
+  bill,
+  open,
+  onOpenChange,
+}: {
+  /** Spesa da eliminare; null a dialog chiuso. Il contenuto resta montato
+      durante l'animazione di chiusura (vedi useRetained). */
+  bill: BillDTO | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const active = useRetained(bill)
+  const openCount = useOpenCount(open)
+  if (!active) return null
+  return (
+    <DeleteBillDialogContent
+      key={openCount}
+      bill={active}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function DeleteBillDialogContent({
   bill,
   open,
   onOpenChange,

@@ -5,7 +5,6 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -70,7 +69,7 @@ const DialogContent = React.forwardRef<
         // sulle singole fasce.
         // Apertura/chiusura animate via keyframes CRT in index.css (crt-on/crt-off).
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-border outline-none sm:max-w-sm",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg bg-popover text-sm text-popover-foreground ring-1 ring-border outline-none sm:max-w-sm",
           className
         )}
         {...props}
@@ -82,13 +81,15 @@ const DialogContent = React.forwardRef<
             render={
               <Button
                 variant="ghost"
-                className="bg-destructive text-white hover:bg-destructive/90 absolute top-2 right-2 z-20"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive absolute top-2 right-2 z-20 font-bold"
                 size="icon-sm"
               />
             }
           >
-            <XIcon
-            />
+            {/* Chiusura in stile comando: [x] testuale al posto dell'icona. */}
+            <span aria-hidden className="text-xs">
+              [x]
+            </span>
             <span className="sr-only">Chiudi</span>
           </DialogPrimitive.Close>
         )}
@@ -130,7 +131,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-none flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "flex flex-none flex-col-reverse gap-2 border-t border-dashed border-border/70 p-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -150,7 +151,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-primary text-base leading-none font-medium",
+        "font-heading text-primary cursor-blink text-base leading-none font-medium before:me-1.5 before:font-normal before:text-muted-foreground before:select-none before:content-['$']",
         className
       )}
       {...props}

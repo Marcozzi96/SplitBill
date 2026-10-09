@@ -3,6 +3,8 @@ import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { MoneyInput } from '@/components/MoneyInput'
 import { centsToAmountInput, formatEuro, resolveAmountToCents, splitEqually } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -238,9 +240,8 @@ export default function BillForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="billBuyer">Pagato da</FieldLabel>
-          <select
+          <Select
             id="billBuyer"
-            className="border-input h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-base md:text-sm"
             value={buyerId ?? ''}
             onChange={(e) => setBuyerId(Number(e.target.value))}
           >
@@ -250,13 +251,16 @@ export default function BillForm({
                 {m.userId === user?.userId ? ' (Tu)' : ''}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Field>
           <div className="flex items-center justify-between">
             <FieldLabel>Ripartizione</FieldLabel>
             <Button type="button" variant="outline" size="sm" onClick={handleSplitEqually}>
+              <span aria-hidden className="text-muted-foreground">
+                ÷
+              </span>
               Dividi equamente
             </Button>
           </div>
@@ -265,16 +269,14 @@ export default function BillForm({
               const selected = selectedIds.has(member.userId!)
               const locked = isLocked(member)
               return (
-                <div key={member.userId} className="flex items-center justify-between gap-2">
+                <div key={member.userId} className="flex items-center gap-2">
                   <label
                     className={cn(
-                      'flex min-h-11 min-w-0 flex-1 items-center gap-2',
+                      'flex min-h-11 min-w-0 items-center gap-2',
                       locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
                     )}
                   >
-                    <input
-                      type="checkbox"
-                      className="size-4 shrink-0"
+                    <Checkbox
                       checked={selected}
                       disabled={locked}
                       onChange={() => toggleMember(member.userId!)}
@@ -285,6 +287,8 @@ export default function BillForm({
                       {member.userId === user?.userId && ' (Tu)'}
                     </span>
                   </label>
+                  {/* Riga da registro contabile: i puntini collegano nome e quota. */}
+                  <span aria-hidden className="border-border min-w-3 flex-1 border-b border-dotted" />
                   <MoneyInput
                     wrapperClassName="shrink-0"
                     className="w-28 text-right"
@@ -301,12 +305,19 @@ export default function BillForm({
             })}
           </div>
           {remainingCents !== null && (
-            <p className="text-muted-foreground text-sm">
+            // Status line: verde (con glow fosforo in scuro) quando le quote
+            // pareggiano, rossa quando manca o avanza qualcosa.
+            <p
+              className={cn(
+                'text-sm',
+                remainingCents === 0 ? 'text-success crt-glow' : 'text-destructive',
+              )}
+            >
               {remainingCents === 0
-                ? 'Quote bilanciate'
+                ? '✓ Quote bilanciate'
                 : remainingCents > 0
-                  ? `Mancano ${formatEuro(remainingCents / 100)} da assegnare`
-                  : `${formatEuro(-remainingCents / 100)} in eccesso`}
+                  ? `! Mancano ${formatEuro(remainingCents / 100)} da assegnare`
+                  : `! ${formatEuro(-remainingCents / 100)} in eccesso`}
             </p>
           )}
         </Field>
@@ -367,9 +378,7 @@ function ShoppingItemsField({
             key={item.itemId}
             className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2"
           >
-            <input
-              type="checkbox"
-              className="size-4 shrink-0"
+            <Checkbox
               checked={selectedIds.has(item.itemId!)}
               onChange={() => onToggle(item.itemId!)}
               aria-label={`Acquistato ${item.name}`}

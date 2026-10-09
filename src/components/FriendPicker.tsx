@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import type { components } from '@/api/types'
 
 type UserDTO = components['schemas']['UserDTO']
@@ -24,9 +25,7 @@ export default function FriendPicker({
         friend.userId == null ? null : (
           <li key={friend.userId}>
             <label className="hover:bg-muted flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3">
-              <input
-                type="checkbox"
-                className="size-4"
+              <Checkbox
                 checked={selectedIds.includes(friend.userId)}
                 onChange={() => onToggle(friend.userId!)}
               />

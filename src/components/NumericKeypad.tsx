@@ -31,7 +31,7 @@ const ROWS: KeypadKey[][] = [
 ]
 
 const KEY_CLASS =
-  'bg-background hover:bg-accent active:bg-accent/80 flex h-11 min-w-11 items-center justify-center rounded-md border text-lg font-medium transition-colors select-none'
+  'bg-background hover:bg-accent active:bg-accent/80 flex h-11 min-w-11 items-center justify-center rounded-sm border text-lg font-medium transition-colors select-none'
 
 // Tastierino "calcolatrice" stile Satispay (resa pop-up gestita da MoneyInput).
 // I tasti usano onPointerDown+preventDefault per non rubare il focus all'input.
@@ -48,7 +48,7 @@ export function NumericKeypad({ onKey }: { onKey: (key: KeypadKey) => void }) {
                   key={key}
                   type="button"
                   aria-label={ARIA_LABELS[key]}
-                  className={cn(KEY_CLASS, isOperator && 'text-destructive text-xl')}
+                  className={cn(KEY_CLASS, isOperator && 'text-destructive crt-glow text-xl')}
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => onKey(key)}
                 >
@@ -75,7 +75,7 @@ export function NumericKeypad({ onKey }: { onKey: (key: KeypadKey) => void }) {
         <button
           type="button"
           aria-label="Uguale"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 flex h-11 items-center justify-center rounded-md text-lg font-semibold transition-colors select-none"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 flex h-11 items-center justify-center rounded-sm text-lg font-semibold transition-colors select-none dark:shadow-[0_0_12px_rgb(52_211_153/0.45)]"
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => onKey('equals')}
         >

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { FieldError } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { getApiErrorMessage } from '@/api/errors'
 import {
@@ -146,9 +147,7 @@ function ShoppingItemRow({
   return (
     <li className="border-border flex items-center gap-1 border-b py-1 last:border-b-0">
       <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2">
-        <input
-          type="checkbox"
-          className="size-4 shrink-0"
+        <Checkbox
           checked={item.toBuy ?? false}
           onChange={(e) => onToggle(e.target.checked)}
           aria-label={`Da comprare: ${item.name}`}

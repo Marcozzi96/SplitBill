@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import BillForm, { type BillFormValues } from '@/components/BillForm'
 import FriendPicker from '@/components/FriendPicker'
 import { getApiErrorMessage } from '@/api/errors'
@@ -108,9 +109,8 @@ export default function GlobalCreateBillDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="billContext">Contesto</FieldLabel>
-              <select
+              <Select
                 id="billContext"
-                className="border-input h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-base md:text-sm"
                 value={context}
                 onChange={(e) => {
                   setContext(e.target.value)
@@ -123,7 +123,7 @@ export default function GlobalCreateBillDialog({
                     Gruppo: {g.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
 
             {groupId == null && (
