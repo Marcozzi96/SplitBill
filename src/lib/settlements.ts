@@ -5,6 +5,7 @@ type UserSettlementDTO = components['schemas']['UserSettlementDTO']
 // Aggregazione dei settlement globali (/balance/settlements) per le liste
 // Amici/Gruppi: DEBT pesa negativo (devi), CREDIT positivo (ti devono).
 // Le somme sono arrotondate ai centesimi per evitare errori float.
+// Niente ordinamento client-side: le liste seguono l'ordine del backend.
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100
@@ -33,17 +34,4 @@ export function netByGroup(settlements: UserSettlementDTO[]): Map<number, number
     addTo(map, s.groupId, s)
   }
   return map
-}
-
-// Ordinamento delle liste: prima chi ha un saldo aperto (per importo
-// assoluto decrescente), poi gli "in pari" in ordine alfabetico.
-export function byOpenBalance<T>(
-  items: T[],
-  netOf: (item: T) => number,
-  nameOf: (item: T) => string,
-): T[] {
-  return [...items].sort((a, b) => {
-    const diff = Math.abs(netOf(b)) - Math.abs(netOf(a))
-    return diff !== 0 ? diff : nameOf(a).localeCompare(nameOf(b), 'it')
-  })
 }

@@ -17,7 +17,7 @@ import {
   useFriendshipRequestsCount,
   useRefuseFriendship,
 } from '@/api/hooks/friends'
-import { byOpenBalance, netByFriend } from '@/lib/settlements'
+import { netByFriend } from '@/lib/settlements'
 import type { components } from '@/api/types'
 
 type FriendshipReqRecDTO = components['schemas']['FriendshipReqRecDTO']
@@ -83,12 +83,8 @@ function FriendsTab({ onNewRequest }: { onNewRequest: () => void }) {
   // Saldo personale (fuori dai gruppi) dai settlement globali, già in cache
   // dalla Home. Se la query fallisce la lista resta usabile, senza saldi.
   const nets = settlementsQuery.data ? netByFriend(settlementsQuery.data) : undefined
-  // Ordinamento per rilevanza nella pagina caricata: prima i saldi aperti.
-  const friends = byOpenBalance(
-    friendsQuery.data?.content ?? [],
-    (f) => nets?.get(f.userId ?? -1) ?? 0,
-    (f) => f.username ?? '',
-  )
+  // Ordine alfabetico lato server: la lista si mostra come arriva.
+  const friends = friendsQuery.data?.content ?? []
 
   return (
     <TabBody

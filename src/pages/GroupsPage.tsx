@@ -6,7 +6,7 @@ import CreateGroupDialog from '@/components/CreateGroupDialog'
 import { getApiErrorMessage } from '@/api/errors'
 import { useMySettlements } from '@/api/hooks/balance'
 import { useGroups } from '@/api/hooks/groups'
-import { byOpenBalance, netByGroup } from '@/lib/settlements'
+import { netByGroup } from '@/lib/settlements'
 
 export default function GroupsPage() {
   const [page, setPage] = useState(0)
@@ -36,12 +36,8 @@ export default function GroupsPage() {
   // Saldo netto per gruppo dai settlement globali, già in cache dalla Home.
   // Se la query fallisce la lista resta usabile, senza saldi.
   const nets = settlementsQuery.data ? netByGroup(settlementsQuery.data) : undefined
-  // Ordinamento per rilevanza nella pagina caricata: prima i saldi aperti.
-  const groups = byOpenBalance(
-    groupsQuery.data?.content ?? [],
-    (g) => nets?.get(g.groupId ?? -1) ?? 0,
-    (g) => g.name ?? '',
-  )
+  // Nessun riordino client-side: la lista segue l'ordine del backend.
+  const groups = groupsQuery.data?.content ?? []
   const totalPages = groupsQuery.data?.totalPages ?? 1
 
   return (

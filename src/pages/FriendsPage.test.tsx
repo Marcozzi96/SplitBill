@@ -103,7 +103,7 @@ describe('FriendsPage', () => {
     })
   })
 
-  it('ordina gli amici per saldo aperto prima dell’ordine alfabetico', async () => {
+  it('mostra gli amici nell’ordine del server, senza riordinare per saldo', async () => {
     mockLists({
       friends: {
         content: [
@@ -126,9 +126,10 @@ describe('FriendsPage', () => {
 
     await screen.findByText('devi 5,00 €')
     const links = screen.getAllByRole('link')
-    // bruno (saldo aperto) prima di anna (in pari), nonostante l'alfabeto.
-    expect(links[0].textContent).toContain('bruno')
-    expect(links[1].textContent).toContain('anna')
+    // anna resta prima di bruno (ordine alfabetico del backend) anche se
+    // bruno ha un saldo aperto.
+    expect(links[0].textContent).toContain('anna')
+    expect(links[1].textContent).toContain('bruno')
   })
 
   it('mostra lo stato vuoto con invito a inviare la prima richiesta', async () => {
