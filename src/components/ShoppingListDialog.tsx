@@ -366,7 +366,7 @@ function SortableShoppingItemRow({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-11 shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            className="size-11 shrink-0 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
             aria-label={`Trascina ${item.name}`}
             {...attributes}
             {...listeners}
