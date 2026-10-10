@@ -1,7 +1,28 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Check, LoaderCircle, Plus, Trash2, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import {
+  DndContext,
+  type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Check, GripVertical, LoaderCircle, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogBody,
@@ -18,8 +39,9 @@ import { cn } from '@/lib/utils'
 import { getApiErrorMessage } from '@/api/errors'
 import {
   useAddShoppingItem,
+  useAllGroupShoppingItems,
   useDeleteShoppingItem,
-  useGroupShoppingItems,
+  useReorderShoppingItem,
   useToggleShoppingItem,
 } from '@/api/hooks/shopping'
 import type { components } from '@/api/types'
@@ -27,8 +49,9 @@ import type { components } from '@/api/types'
 type ShoppingItemDTO = components['schemas']['ShoppingItemDTO']
 
 // Lista della spesa del gruppo: aperta dal dettaglio gruppo, visibile a tutti
-// i membri. Checkbox = ancora da acquistare (toBuy); gli articoli acquistati
-// (toBuy=false) sono barrati e arrivano in fondo dal server.
+// i membri. I "da acquistare" (toBuy=true) sono ordinabili con drag&drop;
+// gli acquistati (toBuy=false) sono in una sezione statica in fondo.
+// L'ordine arriva già dal backend (toBuy DESC, position DESC, id ASC).
 export default function ShoppingListDialog({
   groupId,
   open,
@@ -38,14 +61,63 @@ export default function ShoppingListDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [page, setPage] = useState(0)
+  const [activeId, setActiveId] = useState<number | null>(null)
+
   // La query parte solo a dialog aperto: il componente resta montato anche da chiuso.
-  const itemsQuery = useGroupShoppingItems(groupId, page, undefined, undefined, open)
+  const itemsQuery = useAllGroupShoppingItems(groupId, open)
   const toggleMutation = useToggleShoppingItem()
   const deleteMutation = useDeleteShoppingItem()
+  const reorderMutation = useReorderShoppingItem()
 
-  const items = itemsQuery.data?.content ?? []
-  const totalPages = itemsQuery.data?.totalPages ?? 1
+  const items = itemsQuery.data ?? []
+
+  const toBuyItems = items.filter((i) => i.toBuy)
+  const boughtItems = items.filter((i) => !i.toBuy)
+  const toBuyIds = toBuyItems.map((i) => i.itemId!)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(Number(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = Number(active.id)
+    const overId = Number(over.id)
+    if (Number.isNaN(activeId) || Number.isNaN(overId) || activeId === overId) return
+
+    const activeIndex = toBuyItems.findIndex((i) => i.itemId === activeId)
+    const overIndex = toBuyItems.findIndex((i) => i.itemId === overId)
+    if (activeIndex === -1 || overIndex === -1) return
+
+    const reordered = arrayMove(toBuyItems, activeIndex, overIndex)
+    const newIndex = reordered.findIndex((i) => i.itemId === activeId)
+    const prevItemId = reordered[newIndex - 1]?.itemId ?? null
+    const nextItemId = reordered[newIndex + 1]?.itemId ?? null
+
+    reorderMutation.mutate(
+      {
+        groupId,
+        itemId: activeId,
+        prevItemId,
+        nextItemId,
+        newOrder: reordered.map((i) => i.itemId!),
+      },
+      {
+        onError: (err) => toast.error(getApiErrorMessage(err)),
+      },
+    )
+  }
+
+  const activeItem = activeId != null ? toBuyItems.find((i) => i.itemId === activeId) : undefined
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,84 +141,133 @@ export default function ShoppingListDialog({
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
               {items.length === 0 && (
                 <p className="text-muted-foreground py-4 text-center text-sm">
                   Nessun articolo in lista.
                 </p>
               )}
-              <ul className="flex flex-col">
-                {items.map((item) => (
-                  <ShoppingItemRow
-                    key={item.itemId}
-                    item={item}
-                    onToggle={(toBuy) =>
-                      toggleMutation.mutate(
-                        { itemId: item.itemId!, toBuy },
-                        { onError: (err) => toast.error(getApiErrorMessage(err)) },
-                      )
-                    }
-                    onDelete={() =>
-                      deleteMutation.mutate(item.itemId!, {
-                        onError: (err) => toast.error(getApiErrorMessage(err)),
-                      })
-                    }
-                    deleting={deleteMutation.isPending}
-                  />
-                ))}
-              </ul>
+
+              {toBuyItems.length > 0 && (
+                <DndContext
+                  sensors={sensors}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={toBuyIds} strategy={verticalListSortingStrategy}>
+                    <ul className="flex flex-col gap-1">
+                      {toBuyItems.map((item) => (
+                        <SortableShoppingItemRow
+                          key={item.itemId}
+                          item={item}
+                          onToggle={(toBuy) =>
+                            toggleMutation.mutate(
+                              { itemId: item.itemId!, toBuy },
+                              { onError: (err) => toast.error(getApiErrorMessage(err)) },
+                            )
+                          }
+                          onDelete={() =>
+                            deleteMutation.mutate(item.itemId!, {
+                              onError: (err) => toast.error(getApiErrorMessage(err)),
+                            })
+                          }
+                          deleting={deleteMutation.isPending}
+                        />
+                      ))}
+                    </ul>
+                  </SortableContext>
+
+                  {createPortal(
+                    <DragOverlay>
+                      {activeItem ? (
+                        <ShoppingItemRowBase
+                          item={activeItem}
+                          onToggle={() => {}}
+                          onDelete={() => {}}
+                          deleting={false}
+                        />
+                      ) : null}
+                    </DragOverlay>,
+                    document.body,
+                  )}
+                </DndContext>
+              )}
+
+              {toBuyItems.length === 0 && boughtItems.length > 0 && (
+                <p className="text-muted-foreground py-2 text-center text-sm">
+                  Nessun articolo da comprare.
+                </p>
+              )}
+
+              {boughtItems.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-muted-foreground text-xs uppercase">Comprati</p>
+                  <Card className="bg-muted/30">
+                    <CardContent className="py-2">
+                      <ul className="flex flex-col gap-1">
+                        {boughtItems.map((item) => (
+                          <StaticShoppingItemRow
+                            key={item.itemId}
+                            item={item}
+                            onToggle={(toBuy) =>
+                              toggleMutation.mutate(
+                                { itemId: item.itemId!, toBuy },
+                                { onError: (err) => toast.error(getApiErrorMessage(err)) },
+                              )
+                            }
+                            onDelete={() =>
+                              deleteMutation.mutate(item.itemId!, {
+                                onError: (err) => toast.error(getApiErrorMessage(err)),
+                              })
+                            }
+                            deleting={deleteMutation.isPending}
+                          />
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </DialogBody>
-        {/* Footer fisso (fuori dallo scroll): aggiunta inline e paginazione. */}
+        {/* Footer fisso (fuori dallo scroll): aggiunta inline. */}
         <DialogFooter className="flex-col gap-2 sm:flex-col sm:justify-stretch">
           <AddItemRow groupId={groupId} />
-          {totalPages > 1 && (
-            <div className="flex w-full items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 0}
-                onClick={() => setPage(page - 1)}
-              >
-                Precedenti
-              </Button>
-              <span className="text-muted-foreground text-sm">
-                Pagina {page + 1} di {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page + 1 >= totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Successivi
-              </Button>
-            </div>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-function ShoppingItemRow({
+function ShoppingItemRowBase({
   item,
   onToggle,
   onDelete,
   deleting,
+  dragHandle,
+  className,
 }: {
   item: ShoppingItemDTO
   onToggle: (toBuy: boolean) => void
   onDelete: () => void
   deleting: boolean
+  dragHandle?: React.ReactNode
+  className?: string
 }) {
   const bought = item.toBuy === false
-  // Conferma inline: il primo tap sul cestino mostra conferma/annulla nella riga.
   const [confirming, setConfirming] = useState(false)
+
   return (
-    <li className="border-border flex items-center gap-1 border-b py-1 last:border-b-0">
-      <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2">
+    <li
+      className={cn(
+        'flex min-h-11 items-center gap-1 rounded-md px-2 transition-colors',
+        !bought && 'hover:bg-muted',
+        className,
+      )}
+    >
+      {dragHandle}
+      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
         <Checkbox
           checked={item.toBuy ?? false}
           onChange={(e) => onToggle(e.target.checked)}
@@ -209,6 +330,73 @@ function ShoppingItemRow({
         </Button>
       )}
     </li>
+  )
+}
+
+function SortableShoppingItemRow({
+  item,
+  onToggle,
+  onDelete,
+  deleting,
+}: {
+  item: ShoppingItemDTO
+  onToggle: (toBuy: boolean) => void
+  onDelete: () => void
+  deleting: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.itemId!,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ShoppingItemRowBase
+        item={item}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        deleting={deleting}
+        className={cn(isDragging && 'bg-muted/50 opacity-60')}
+        dragHandle={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            aria-label={`Trascina ${item.name}`}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-5" />
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
+function StaticShoppingItemRow({
+  item,
+  onToggle,
+  onDelete,
+  deleting,
+}: {
+  item: ShoppingItemDTO
+  onToggle: (toBuy: boolean) => void
+  onDelete: () => void
+  deleting: boolean
+}) {
+  return (
+    <ShoppingItemRowBase
+      item={item}
+      onToggle={onToggle}
+      onDelete={onDelete}
+      deleting={deleting}
+    />
   )
 }
 

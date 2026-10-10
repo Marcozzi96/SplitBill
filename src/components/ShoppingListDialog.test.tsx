@@ -9,6 +9,7 @@ vi.mock('@/api/client', () => ({
     post: vi.fn(),
     get: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
   },
@@ -50,7 +51,7 @@ describe('ShoppingListDialog', () => {
     expect(await screen.findByText('Latte')).toBeTruthy()
     expect(screen.getByText('x6')).toBeTruthy()
     expect(mockedGet).toHaveBeenCalledWith('/shopping-items/group/5', {
-      params: { page: 0, size: 20 },
+      params: { page: 0, size: 500 },
     })
     // checked = toBuy: gli acquistati sono deselezionati.
     expect(screen.getByLabelText('Da comprare: Latte')).toHaveProperty('checked', true)
@@ -140,18 +141,46 @@ describe('ShoppingListDialog', () => {
     expect(screen.getByRole('button', { name: /Aggiungi articolo/ })).toBeTruthy()
   })
 
-  it('mostra la paginazione solo con più pagine', async () => {
-    mockList(items, 3)
+  it('carica tutte le pagine quando la lista è paginata', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: { content: items, totalPages: 2, number: 0 } })
+      .mockResolvedValueOnce({
+        data: { content: [{ itemId: 4, groupId: 5, name: 'Pasta', toBuy: true }], totalPages: 2, number: 1 },
+      })
     renderDialog()
 
-    expect(await screen.findByText('Pagina 1 di 3')).toBeTruthy()
+    expect(await screen.findByText('Latte')).toBeTruthy()
+    expect(screen.getByText('Pasta')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Successivi' }))
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledTimes(2))
+    expect(mockedGet).toHaveBeenNthCalledWith(1, '/shopping-items/group/5', {
+      params: { page: 0, size: 500 },
+    })
+    expect(mockedGet).toHaveBeenNthCalledWith(2, '/shopping-items/group/5', {
+      params: { page: 1, size: 500 },
+    })
+  })
 
-    await waitFor(() =>
-      expect(mockedGet).toHaveBeenCalledWith('/shopping-items/group/5', {
-        params: { page: 1, size: 20 },
-      }),
-    )
+  it('gli articoli da comprare hanno un handle di trascinamento', async () => {
+    renderDialog()
+
+    expect(await screen.findByRole('button', { name: 'Trascina Latte' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Trascina Uova' })).toBeTruthy()
+  })
+
+  it('gli articoli comprati sono in una sezione statica senza handle', async () => {
+    renderDialog()
+
+    expect(await screen.findByText('Comprati')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Trascina Pane' })).toBeNull()
+  })
+
+  it('con solo articoli comprati mostra il messaggio dedicato', async () => {
+    mockList([{ itemId: 3, groupId: 5, name: 'Pane', toBuy: false }])
+    renderDialog()
+
+    expect(await screen.findByText('Nessun articolo da comprare.')).toBeTruthy()
+    expect(screen.getByText('Comprati')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Trascina Pane' })).toBeNull()
   })
 })

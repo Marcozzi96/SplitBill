@@ -117,7 +117,7 @@ export interface paths {
         get?: never;
         /**
          * Modifica una spesa
-         * @description Consente la modifica a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Con buyerId si può cambiare chi ha pagato.
+         * @description Consente la modifica a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Le spese personali devono mantenere esattamente 2 partecipanti distinti (buyer + debitori nella ripartizione). Con buyerId si può cambiare chi ha pagato.
          */
         put: operations["updateBill"];
         post?: never;
@@ -263,7 +263,7 @@ export interface paths {
         put?: never;
         /**
          * Crea una nuova spesa
-         * @description Crea una spesa con suddivisione personalizzata dei debiti. La somma dei debiti deve essere esattamente uguale all'importo totale. Senza groupId la spesa è personale (tra amici): i debitori devono essere amici del buyer. Con buyerId si indica chi ha pagato (default: utente autenticato).
+         * @description Crea una spesa con suddivisione personalizzata dei debiti. La somma dei debiti deve essere esattamente uguale all'importo totale. Senza groupId la spesa è personale (tra amici): il buyer più i debitori nella ripartizione devono coinvolgere esattamente 2 partecipanti distinti (l'utente autenticato e un solo amico); i debitori diversi dal buyer devono essere amici del buyer. Con buyerId si indica chi ha pagato (default: utente autenticato).
          */
         post: operations["createBill"];
         delete?: never;
@@ -370,6 +370,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/shopping-items/{itemId}/position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Riordina un articolo
+         * @description Sposta un articolo da acquistare tra due vicini dello stesso gruppo. prevItemId/nextItemId null indicano rispettivamente cima e fondo del blocco da acquistare. Restituisce la mappa aggiornata id→position di tutto il gruppo.
+         */
+        patch: operations["reorderItem"];
         trace?: never;
     };
     "/user/me": {
@@ -862,6 +882,8 @@ export interface components {
             name?: string;
             note?: string;
             toBuy?: boolean;
+            /** Format: double */
+            position?: number;
             /** Format: date-time */
             createdAt?: string;
         };
@@ -923,6 +945,18 @@ export interface components {
         ForgotPasswordRequest: {
             email?: string;
         };
+        ReorderShoppingItemRequest: {
+            /** Format: int64 */
+            prevItemId?: number;
+            /** Format: int64 */
+            nextItemId?: number;
+        };
+        ShoppingItemPositionDTO: {
+            /** Format: int64 */
+            itemId?: number;
+            /** Format: double */
+            position?: number;
+        };
         FriendshipReqSenDTO: {
             /** Format: int64 */
             friendshipId?: number;
@@ -956,10 +990,10 @@ export interface components {
             offset?: number;
             sort?: components["schemas"]["SortObject"];
             /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
             pageNumber?: number;
             paged?: boolean;
-            /** Format: int32 */
-            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -2203,6 +2237,68 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    reorderItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderShoppingItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Ordinamento aggiornato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemPositionDTO"][];
+                };
+            };
+            /** @description Dati non validi: articolo già acquistato o vicini non validi */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemPositionDTO"][];
+                };
+            };
+            /** @description Accesso non autorizzato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemPositionDTO"][];
+                };
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemPositionDTO"][];
+                };
+            };
+            /** @description Articolo non trovato */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ShoppingItemPositionDTO"][];
                 };
             };
         };

@@ -15,7 +15,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, React.ComponentProps<"input"
         className={cn(
           "grid size-4 shrink-0 cursor-pointer appearance-none place-items-center rounded-sm border border-input bg-transparent outline-none transition-colors dark:bg-input/30",
           "before:scale-0 before:text-[10px] before:leading-none before:font-bold before:transition-transform before:content-['✕']",
-          "checked:border-primary checked:bg-primary checked:text-primary-foreground checked:before:scale-100",
+          "checked:border-primary checked:bg-primary checked:text-primary-foreground checked:before:scale-100 dark:checked:bg-primary",
           "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
