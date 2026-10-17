@@ -38,6 +38,7 @@ function mockApi({
   balanceData = balance,
   groupSettlements = [],
   shoppingItems = { content: [], totalElements: 0, totalPages: 0, number: 0 },
+  payments = { content: [], totalPages: 0, number: 0 },
 }: {
   membersData?: object[]
   friends?: object
@@ -46,6 +47,7 @@ function mockApi({
   balanceData?: object
   groupSettlements?: object[]
   shoppingItems?: object
+  payments?: object
 } = {}) {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/groups/5') return Promise.resolve({ data: group })
@@ -56,6 +58,7 @@ function mockApi({
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/bills/group/5') return Promise.resolve({ data: bills })
     if (url === '/shopping-items/group/5') return Promise.resolve({ data: shoppingItems })
+    if (url === '/payments') return Promise.resolve({ data: payments })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 }
@@ -383,5 +386,59 @@ describe('GroupDetailPage', () => {
         params: { payeeId: 2, amount: 20, groupId: 5 },
       }),
     )
+  })
+
+  it('nel tab Rimborsi mostra tutti i rimborsi del gruppo, anche tra altri membri', async () => {
+    mockApi({
+      payments: {
+        content: [
+          // Rimborso dell'utente autenticato.
+          {
+            paymentId: 1,
+            payer: { userId: 1, username: 'mario' },
+            payee: { userId: 2, username: 'luigi' },
+            groupId: 5,
+            amount: 10,
+            date: '2026-08-15',
+            notes: '',
+          },
+          // Rimborso tra altri membri: copy e importo neutri, senza "ti".
+          {
+            paymentId: 2,
+            payer: { userId: 2, username: 'luigi' },
+            payee: { userId: 3, username: 'anna' },
+            groupId: 5,
+            amount: 8,
+            date: '2026-08-16',
+            notes: '',
+          },
+        ],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderDetail()
+
+    await screen.findByRole('heading', { name: 'Vacanze' })
+    // Il pannello Rimborsi è smontato finché non si apre il tab: nessuna chiamata.
+    expect(mockedGet).not.toHaveBeenCalledWith('/payments', expect.anything())
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Rimborsi' }))
+
+    const textIs = (text: string) => (_: string, el: Element | null) =>
+      el?.tagName === 'P' && el.textContent?.replace(/\s+/g, ' ').trim() === text
+    expect(await screen.findByText(textIs('Hai rimborsato 10,00 € a luigi'))).toBeTruthy()
+    expect(screen.getByText(textIs('luigi ha rimborsato 8,00 € a anna'))).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/payments', {
+      params: { page: 0, size: 20, groupId: 5 },
+    })
+  })
+
+  it('mostra lo stato vuoto contestuale nel tab Rimborsi', async () => {
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rimborsi' }))
+
+    await screen.findByText('Nessun rimborso nel gruppo ancora.')
   })
 })

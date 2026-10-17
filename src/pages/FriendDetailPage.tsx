@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, LoaderCircle, Pencil, Plus, Trash2, UserMinus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
 import BillCard from '@/components/BillCard'
 import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
+import PaymentsList from '@/components/PaymentsList'
 import { getApiErrorMessage } from '@/api/errors'
 import { useMyPersonalBills } from '@/api/hooks/bills'
 import { useCancelFriendship, useFriends } from '@/api/hooks/friends'
@@ -131,69 +133,87 @@ export default function FriendDetailPage() {
       </div>
 
       <p className="text-muted-foreground text-sm">
-        Le spese fuori dai gruppi tra te e {friend.username}.
+        Spese e rimborsi fuori dai gruppi tra te e {friend.username}.
       </p>
 
-      {bills.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center">
-          Nessuna spesa condivisa con {friend.username}.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {bills.map((bill) => (
-            <BillCard
-              key={bill.billId}
-              bill={bill}
-              onClick={() => setViewingBill(bill)}
-              actions={
-                <>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={`Modifica ${bill.description}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setEditingBill(bill)
-                    }}
-                  >
-                    <Pencil />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={`Elimina ${bill.description}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setDeletingBill(bill)
-                    }}
-                  >
-                    <Trash2 />
-                  </Button>
-                </>
-              }
-            />
-          ))}
-        </div>
-      )}
+      {/* Base UI smonta i pannelli inattivi: la query /payments?friendId=
+          parte solo quando si apre il tab Rimborsi. */}
+      <Tabs defaultValue="spese">
+        <TabsList className="w-full">
+          <TabsTrigger value="spese">Spese</TabsTrigger>
+          <TabsTrigger value="rimborsi">Rimborsi</TabsTrigger>
+        </TabsList>
+        <TabsContent value="spese" className="pt-4">
+          {bills.length === 0 ? (
+            <p className="text-muted-foreground py-12 text-center">
+              Nessuna spesa condivisa con {friend.username}.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {bills.map((bill) => (
+                <BillCard
+                  key={bill.billId}
+                  bill={bill}
+                  onClick={() => setViewingBill(bill)}
+                  actions={
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Modifica ${bill.description}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingBill(bill)
+                        }}
+                      >
+                        <Pencil />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Elimina ${bill.description}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeletingBill(bill)
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </>
+                  }
+                />
+              ))}
+            </div>
+          )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Precedenti
-          </Button>
-          <span className="text-muted-foreground text-sm">
-            Pagina {page + 1} di {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page + 1 >= totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Successivi
-          </Button>
-        </div>
-      )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0}
+                onClick={() => setPage(page - 1)}
+              >
+                Precedenti
+              </Button>
+              <span className="text-muted-foreground text-sm">
+                Pagina {page + 1} di {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page + 1 >= totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Successivi
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="rimborsi" className="pt-4">
+          <PaymentsList friendId={friendId} emptyText="Nessun rimborso personale ancora." />
+        </TabsContent>
+      </Tabs>
 
       <BillDetailDialog
         bill={viewingBill}

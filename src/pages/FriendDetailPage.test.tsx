@@ -75,6 +75,23 @@ const authValue: AuthContextValue = {
   logout: vi.fn(),
 }
 
+// Rimborsi personali tra mario (1) e luigi (2), come da GET /payments?friendId=2.
+const personalPayments = {
+  content: [
+    {
+      paymentId: 1,
+      payer: { userId: 1, username: 'mario' },
+      payee: { userId: 2, username: 'luigi' },
+      groupId: null,
+      amount: 10,
+      date: '2026-08-15',
+      notes: '',
+    },
+  ],
+  totalPages: 1,
+  number: 0,
+}
+
 function renderPage(entry = '/friends/2') {
   const queryClient = new QueryClient()
   return render(
@@ -96,6 +113,7 @@ beforeEach(() => {
   mockedGet.mockImplementation((url: string) => {
     if (url === '/user/getFriends') return Promise.resolve({ data: friendsPage })
     if (url === '/bills/getMyPersonalBills') return Promise.resolve({ data: personalBills })
+    if (url === '/payments') return Promise.resolve({ data: personalPayments })
     return Promise.reject(new Error(`GET non mockata: ${url}`))
   })
 })
@@ -248,5 +266,41 @@ describe('FriendDetailPage', () => {
     // Si apre solo il modale di modifica (campi del form), non quello di dettaglio.
     expect(await screen.findByLabelText('Descrizione')).toBeTruthy()
     expect(screen.queryByText('Quote')).toBeNull()
+  })
+
+  it('carica i rimborsi personali solo all’apertura del tab, filtrati per friendId', async () => {
+    renderPage()
+
+    await screen.findByText('Pizza')
+    // Il pannello Rimborsi è smontato finché non si apre il tab: nessuna chiamata.
+    expect(mockedGet).not.toHaveBeenCalledWith('/payments', expect.anything())
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Rimborsi' }))
+
+    expect(
+      await screen.findByText(
+        (_, el) =>
+          el?.tagName === 'P' &&
+          el.textContent?.replace(/\s+/g, ' ').trim() === 'Hai rimborsato 10,00 € a luigi',
+      ),
+    ).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/payments', {
+      params: { page: 0, size: 20, friendId: 2 },
+    })
+  })
+
+  it('mostra lo stato vuoto contestuale nel tab Rimborsi', async () => {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/user/getFriends') return Promise.resolve({ data: friendsPage })
+      if (url === '/bills/getMyPersonalBills') return Promise.resolve({ data: personalBills })
+      if (url === '/payments')
+        return Promise.resolve({ data: { content: [], totalPages: 0, number: 0 } })
+      return Promise.reject(new Error(`GET non mockata: ${url}`))
+    })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rimborsi' }))
+
+    await screen.findByText('Nessun rimborso personale ancora.')
   })
 })

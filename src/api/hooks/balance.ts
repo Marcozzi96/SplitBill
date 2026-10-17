@@ -47,12 +47,29 @@ export function useGroupSettlements(groupId: number) {
   })
 }
 
-// Cronologia rimborsi (paginata) in cui l'utente è payer o payee.
-export function usePayments(page: number) {
+// Cronologia rimborsi paginata. Senza filtri (Home): solo quelli in cui
+// l'utente è payer o payee. Con friendId: solo i rimborsi personali con
+// quell'amico. Con groupId: tutti i rimborsi del gruppo, anche tra altri
+// membri. I filtri entrano in query key e params solo se valorizzati, così
+// la chiamata della Home resta esattamente { page, size }.
+export type PaymentsFilters = { friendId?: number; groupId?: number }
+
+export function usePayments(page: number, filters?: PaymentsFilters) {
+  const friendId = filters?.friendId
+  const groupId = filters?.groupId
   return useQuery({
-    queryKey: [...PAYMENTS_ROOT, 'list', page],
+    queryKey: [...PAYMENTS_ROOT, 'list', page, friendId ?? null, groupId ?? null],
     queryFn: async () =>
-      (await api.get<PagePaymentDTO>('/payments', { params: { page, size: PAGE_SIZE } })).data,
+      (
+        await api.get<PagePaymentDTO>('/payments', {
+          params: {
+            page,
+            size: PAGE_SIZE,
+            ...(friendId != null ? { friendId } : {}),
+            ...(groupId != null ? { groupId } : {}),
+          },
+        })
+      ).data,
     placeholderData: keepPreviousData,
   })
 }

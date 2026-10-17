@@ -27,12 +27,12 @@ const authValue: AuthContextValue = {
   logout: vi.fn(),
 }
 
-function renderList() {
+function renderList(props?: { friendId?: number; groupId?: number; emptyText?: string }) {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={authValue}>
-        <PaymentsList />
+        <PaymentsList {...props} />
       </AuthContext.Provider>
     </QueryClientProvider>,
   )
@@ -41,6 +41,10 @@ function renderList() {
 beforeEach(() => {
   vi.clearAllMocks()
 })
+
+// Il testo delle righe è spezzato in più span e formatEuro usa NBSP: confronto normalizzato.
+const textIs = (text: string) => (_: string, el: Element | null) =>
+  el?.tagName === 'P' && el.textContent?.replace(/\s+/g, ' ').trim() === text
 
 describe('PaymentsList', () => {
   it('mostra la cronologia paginata dal punto di vista dell’utente', async () => {
@@ -72,9 +76,6 @@ describe('PaymentsList', () => {
     })
     renderList()
 
-    // Il testo è spezzato in più span e formatEuro usa NBSP: confronto normalizzato.
-    const textIs = (text: string) => (_: string, el: Element | null) =>
-      el?.tagName === 'P' && el.textContent?.replace(/\s+/g, ' ').trim() === text
     expect(await screen.findByText(textIs('Hai rimborsato 10,00 € a luigi'))).toBeTruthy()
     const byText = (text: string) => screen.getByText(textIs(text))
     expect(byText('luigi ti ha rimborsato 5,00 €')).toBeTruthy()
@@ -88,5 +89,67 @@ describe('PaymentsList', () => {
     renderList()
 
     await screen.findByText('Nessun rimborso ancora.')
+  })
+
+  it('con friendId filtra i rimborsi personali e omette il suffisso', async () => {
+    mockedGet.mockResolvedValue({
+      data: {
+        content: [
+          {
+            paymentId: 3,
+            payer: { userId: 2, username: 'luigi' },
+            payee: { userId: 1, username: 'mario' },
+            groupId: null,
+            amount: 5,
+            date: '2026-08-16',
+            notes: '',
+          },
+        ],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderList({ friendId: 2 })
+
+    expect(await screen.findByText(textIs('luigi ti ha rimborsato 5,00 €'))).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/payments', {
+      params: { page: 0, size: 20, friendId: 2 },
+    })
+    // Nel contesto filtrato il suffisso "personale"/"di gruppo" è ridondante.
+    expect(screen.queryByText(/personale/)).toBeNull()
+  })
+
+  it('con groupId mostra anche i rimborsi tra altri membri con copy neutro', async () => {
+    mockedGet.mockResolvedValue({
+      data: {
+        content: [
+          // Rimborso tra terzi: né payer né payee sono l'utente autenticato.
+          {
+            paymentId: 4,
+            payer: { userId: 2, username: 'luigi' },
+            payee: { userId: 3, username: 'anna' },
+            groupId: 5,
+            amount: 8,
+            date: '2026-08-17',
+            notes: '',
+          },
+        ],
+        totalPages: 1,
+        number: 0,
+      },
+    })
+    renderList({ groupId: 5 })
+
+    expect(await screen.findByText(textIs('luigi ha rimborsato 8,00 € a anna'))).toBeTruthy()
+    expect(mockedGet).toHaveBeenCalledWith('/payments', {
+      params: { page: 0, size: 20, groupId: 5 },
+    })
+  })
+
+  it('mostra lo stato vuoto contestuale', async () => {
+    mockedGet.mockResolvedValue({ data: { content: [], totalPages: 0, number: 0 } })
+    renderList({ groupId: 5, emptyText: 'Nessun rimborso nel gruppo ancora.' })
+
+    await screen.findByText('Nessun rimborso nel gruppo ancora.')
   })
 })

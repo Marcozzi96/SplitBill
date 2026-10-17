@@ -17,10 +17,12 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import FriendPicker from '@/components/FriendPicker'
 import BillCard from '@/components/BillCard'
 import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
+import PaymentsList from '@/components/PaymentsList'
 import ShoppingListDialog from '@/components/ShoppingListDialog'
 import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
 import { netBalanceClass } from '@/lib/money'
@@ -192,15 +194,26 @@ function GroupDetailBody({
 
       <GroupBalanceSection groupId={groupId} />
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Spese</h2>
-        <Button variant="outline" size="sm" onClick={() => setCreateBillOpen(true)}>
-          <Plus />
-          Nuova spesa
-        </Button>
-      </div>
-
-      <GroupBills groupId={groupId} members={members} />
+      <Tabs defaultValue="spese">
+        <div className="flex items-center justify-between gap-2">
+          <TabsList>
+            <TabsTrigger value="spese">Spese</TabsTrigger>
+            <TabsTrigger value="rimborsi">Rimborsi</TabsTrigger>
+          </TabsList>
+          <Button variant="outline" size="sm" onClick={() => setCreateBillOpen(true)}>
+            <Plus />
+            Nuova spesa
+          </Button>
+        </div>
+        {/* Base UI smonta i pannelli inattivi: la query /payments?groupId=
+            parte solo quando si apre il tab Rimborsi. */}
+        <TabsContent value="spese" className="pt-4">
+          <GroupBills groupId={groupId} members={members} />
+        </TabsContent>
+        <TabsContent value="rimborsi" className="pt-4">
+          <PaymentsList groupId={groupId} emptyText="Nessun rimborso nel gruppo ancora." />
+        </TabsContent>
+      </Tabs>
 
       <MembersDialog
         members={members}

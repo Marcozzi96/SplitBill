@@ -62,7 +62,9 @@ src/
 │   #   eliminazione, aggiunta inline (nome + nota), paginata
 │   # SettlementList.tsx: "chi deve a chi" + dialog di rimborso (usata in Home, dettaglio gruppo; importo pre-compilato al massimo del debito);
 │   #   il click su un settlement porta al gruppo (se di gruppo) o al dettaglio amico (se personale)
-│   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home)
+│   # PaymentsList.tsx: cronologia rimborsi paginata (tab "Cronologia" della Home e tab "Rimborsi"
+│   #   dei dettagli amico/gruppo; prop opzionali friendId/groupId per il filtro lato server e
+│   #   emptyText per lo stato vuoto contestuale)
 │   # GoogleLoginButton.tsx: bottone "Continua con Google" (Login/Register), visibile solo se VITE_GOOGLE_CLIENT_ID è valorizzata
 │   # ReleasesCard.tsx: card "Ultimi rilasci" della StatusPage (ultimi 5 commit di main dei repo GitHub backend/frontend)
 │   # MoneyInput.tsx + NumericKeypad.tsx: input monetario con tastierino "calcolatrice" custom stile Satispay,
@@ -102,7 +104,7 @@ e2e/                # test E2E Playwright (esclusi da Vitest)
 - **Paginazione**: `?page=0&size=20`, risposta `Page<T>` Spring (`content`, `totalElements`, `totalPages`, `number`, ...). Ordinamenti lato server: spese e rimborsi dal più recente (`date`/`id` desc), lista amici alfabetica per username.
 - **Uscita da un gruppo**: i debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali (settlement con `groupId` null).
 - **Utenti eliminati**: `DELETE /user/delete` (hook `useDeleteUser`, card "Elimina account" in Impostazioni con conferma testuale "ELIMINA" e avviso sui debiti/crediti aperti → logout + redirect a `/login`). Nei DTO arrivano come `username: "UtenteEliminato"`, `email: null`, `deleted: true`: nei settlement (`SettlementList`) mostrano l'icona `TriangleAlert` → popup "Utente eliminato"; su `CREDIT` il popup offre "Dimentica il debito" (`useForgiveDebt` → `POST /payments/forgive?payerId=&groupId=`). Non sono selezionabili nelle nuove spese (`BillForm` disabilita i membri `deleted`; in modifica restano se già partecipanti). La lista amici li esclude già lato backend.
-- **Rimborsi**: passare il `groupId` del settlement; senza `groupId` si saldano solo i debiti personali.
+- **Rimborsi**: passare il `groupId` del settlement; senza `groupId` si saldano solo i debiti personali. La cronologia (`GET /payments`, hook `usePayments(page, { friendId?, groupId? })`) accetta **un solo** filtro opzionale: `friendId` = solo rimborsi personali con quell'amico (tab "Rimborsi" del dettaglio amico), `groupId` = tutti i rimborsi del gruppo, anche tra altri membri (tab "Rimborsi" del dettaglio gruppo); insieme → 400. Senza filtri la semantica è quella della Home (payer o payee = utente). Nei contesti filtrati il suffisso "personale"/"di gruppo" è omesso e i rimborsi tra terzi hanno copy e importo neutri ("X ha rimborsato Y a Z", senza "ti").
 - **Mutazioni**: dopo ogni mutazione invalidare le query TanStack Query correlate (bilanci, settlement, liste).
 - **Date**: stringhe ISO dal backend (`YYYY-MM-DD` per LocalDate).
 - **Env**: base URL API in `VITE_API_BASE_URL` (vedi `.env.example`). In dev, se assente, il default è `http://<host-della-pagina>:8080` — così i test da smartphone in LAN funzionano senza configurazione. Mai committare `.env`.

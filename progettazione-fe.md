@@ -249,7 +249,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 |--------|------|-------|--------|------|
 | POST | `/payments?payeeId=&amount=&groupId=&notes=` | query (`groupId`, `notes` opzionali) | `PaymentDTO` | payer = utente autenticato; **409 se supera il debito effettivo** |
 | POST | `/payments/forgive?payerId=&groupId=` | query (`groupId` opzionale) | `PaymentDTO` | "Dimentica il debito": estingue l'intero debito che un utente **eliminato** (`payerId`) ha verso l'autenticato; 400 se payer non eliminato o nessun debito |
-| GET | `/payments?page=&size=` | paginata | `Page<PaymentDTO>` | Rimborsi in cui l'utente è payer o payee; dalla più recente |
+| GET | `/payments?page=&size=&friendId=&groupId=` | paginata (`friendId`/`groupId` opzionali, **mai insieme** → 400) | `Page<PaymentDTO>` | Senza filtri: rimborsi in cui l'utente è payer o payee, dalla più recente. Con `friendId`: solo i rimborsi personali (senza gruppo) tra l'utente e l'amico. Con `groupId`: tutti i rimborsi del gruppo, anche tra altri membri (solo membri attivi) |
 
 ### 6.9 Endpoint — Bilanci (`/balance`, autenticati)
 
@@ -278,8 +278,9 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Login / Register / Forgot / Reset / Confirm | `/auth/*` |
 | Home (bilanci + cronologia rimborsi in tab) | `/balance/me`, `/balance/settlements`, `POST /payments`, `GET /payments`, `/user/friendshipRequests/count` |
 | Amici | `/user/getFriends`, `/user/getFriendshipReq*`, send/accept/refuse/cancel |
+| Dettaglio amico (tab Spese/Rimborsi) | `/bills/getMyPersonalBills?friendId=`, `GET /payments?friendId=` |
 | Lista gruppi | `/groups`, `/groups/create` |
-| Dettaglio gruppo | `/groups/{id}`, `/groups/{id}/members`, `/bills/group/{id}`, `/groups/{id}/balance`, `/groups/{id}/settlements` |
+| Dettaglio gruppo (tab Spese/Rimborsi) | `/groups/{id}`, `/groups/{id}/members`, `/bills/group/{id}`, `/groups/{id}/balance`, `/groups/{id}/settlements`, `GET /payments?groupId=` |
 | Nuova spesa (dettaglio o FAB globale) | `/groups/{id}/members` + `POST /bills/new` |
 | Profilo | `/user/me`, `/user/update`, `/user/delete` |
 

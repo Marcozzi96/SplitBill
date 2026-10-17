@@ -176,8 +176,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Recupera i propri rimborsi
-         * @description Restituisce la cronologia dei rimborsi in cui l'utente è coinvolto, con paginazione
+         * Recupera i rimborsi
+         * @description Restituisce la cronologia dei rimborsi con paginazione. Senza filtri: solo i rimborsi in cui l'utente autenticato è payer o payee. Con friendId: solo i rimborsi personali (senza gruppo) tra l'utente e l'amico indicato, in entrambe le direzioni. Con groupId: tutti i rimborsi del gruppo (riservato ai membri attivi). friendId e groupId non possono essere usati insieme.
          */
         get: operations["getPayments"];
         put?: never;
@@ -989,11 +989,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1789,6 +1789,8 @@ export interface operations {
             query?: {
                 page?: number;
                 size?: number;
+                friendId?: number;
+                groupId?: number;
             };
             header?: never;
             path?: never;
@@ -1798,6 +1800,33 @@ export interface operations {
         responses: {
             /** @description Cronologia rimborsi restituita */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePaymentDTO"];
+                };
+            };
+            /** @description friendId e groupId usati insieme */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePaymentDTO"];
+                };
+            };
+            /** @description Non autenticato */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePaymentDTO"];
+                };
+            };
+            /** @description L'utente non è membro attivo del gruppo indicato */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

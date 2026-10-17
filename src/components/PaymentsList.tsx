@@ -16,13 +16,24 @@ function formatDate(iso?: string) {
   })
 }
 
-// Cronologia dei rimborsi in cui l'utente è payer o payee.
-// Usata nella tab "Cronologia" della Home: loading/errore sono locali
-// alla lista e non bloccano il resto della pagina.
-export default function PaymentsList() {
+// Cronologia dei rimborsi. Senza filtri (tab "Cronologia" della Home): quelli
+// in cui l'utente è payer o payee. Con friendId (dettaglio amico) o groupId
+// (dettaglio gruppo) la lista è filtrata lato server; nei contesti filtrati
+// il suffisso "personale"/"di gruppo" è omesso perché ridondante.
+// Loading/errore sono locali alla lista e non bloccano il resto della pagina.
+export default function PaymentsList({
+  friendId,
+  groupId,
+  emptyText = 'Nessun rimborso ancora.',
+}: {
+  friendId?: number
+  groupId?: number
+  emptyText?: string
+}) {
   const { user } = useAuth()
   const [page, setPage] = useState(0)
-  const paymentsQuery = usePayments(page)
+  const paymentsQuery = usePayments(page, { friendId, groupId })
+  const filtered = friendId != null || groupId != null
 
   if (paymentsQuery.isPending) {
     return (
@@ -49,11 +60,12 @@ export default function PaymentsList() {
   return (
     <div className="flex flex-col gap-4">
       {payments.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center">Nessun rimborso ancora.</p>
+        <p className="text-muted-foreground py-12 text-center">{emptyText}</p>
       ) : (
         <div className="flex flex-col gap-2">
           {payments.map((payment) => {
             const isPayer = payment.payer?.userId === user?.userId
+            const isPayee = payment.payee?.userId === user?.userId
             return (
               <Card key={payment.paymentId}>
                 <CardContent className="flex flex-col gap-1 py-3">
@@ -66,7 +78,7 @@ export default function PaymentsList() {
                         </span>{' '}
                         a <span className="text-chart-2 font-medium">{payment.payee?.username}</span>
                       </>
-                    ) : (
+                    ) : isPayee ? (
                       <>
                         <span className="text-chart-2 font-medium">{payment.payer?.username}</span>{' '}
                         ti ha rimborsato{' '}
@@ -74,11 +86,19 @@ export default function PaymentsList() {
                           {formatEuro(payment.amount)}
                         </span>
                       </>
+                    ) : (
+                      // Rimborso tra altri membri del gruppo: copy e importo neutri.
+                      <>
+                        <span className="text-chart-2 font-medium">{payment.payer?.username}</span>{' '}
+                        ha rimborsato{' '}
+                        <span className="font-medium">{formatEuro(payment.amount)}</span> a{' '}
+                        <span className="text-chart-2 font-medium">{payment.payee?.username}</span>
+                      </>
                     )}
                   </p>
                   <p className="text-muted-foreground text-xs">
                     {formatDate(payment.date)}
-                    {payment.groupId != null ? ' · di gruppo' : ' · personale'}
+                    {!filtered && (payment.groupId != null ? ' · di gruppo' : ' · personale')}
                     {payment.notes ? ` · ${payment.notes}` : ''}
                   </p>
                 </CardContent>
