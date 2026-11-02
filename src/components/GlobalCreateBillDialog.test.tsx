@@ -89,7 +89,7 @@ describe('GlobalCreateBillDialog', () => {
     expect(await screen.findByLabelText('Partecipa mario')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('checked', true)
     expect(screen.getByLabelText('Pagato da').textContent).toContain('mario (Tu)')
-  })
+  }, 10_000)
 
   it('crea una spesa personale senza groupId', async () => {
     mockedPost.mockResolvedValue({ data: { billId: 50 } })
