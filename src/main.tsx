@@ -8,9 +8,12 @@ import AuthProvider from './auth/AuthProvider'
 import BootSequence from '@/components/BootSequence'
 import ThemeColorMeta from '@/components/ThemeColorMeta'
 import { Toaster } from '@/components/ui/sonner'
+import { registerAppServiceWorker } from './pwa'
 import './index.css'
 
 const queryClient = new QueryClient()
+
+registerAppServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -27,7 +30,9 @@ createRoot(document.getElementById('root')!).render(
           richColors
           position="bottom-center"
           offset={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
-          mobileOffset={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+          mobileOffset={{
+            bottom: 'calc(4.5rem + env(safe-area-inset-bottom))',
+          }}
         />
       </ThemeProvider>
     </QueryClientProvider>
