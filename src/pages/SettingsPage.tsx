@@ -108,7 +108,7 @@ function FabPositionCard() {
       <CardHeader>
         <CardTitle className="text-lg">Posizione pulsante +</CardTitle>
         <CardDescription>
-          Tieni premuto il pulsante per un secondo e trascinalo dove preferisci. Da tastiera puoi
+          Tieni premuto il pulsante per mezzo secondo e trascinalo dove preferisci. Da tastiera puoi
           spostarlo con Alt e le frecce direzionali.
         </CardDescription>
       </CardHeader>

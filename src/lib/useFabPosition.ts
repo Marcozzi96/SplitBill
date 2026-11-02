@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type Mouse
 
 const FAB_POSITION_KEY = 'splitbill_fab_position'
 const FAB_POSITION_RESET_EVENT = 'splitbill:reset-fab-position'
-const LONG_PRESS_MS = 1000
+const LONG_PRESS_MS = 500
 const SCREEN_MARGIN = 16
 const BOTTOM_NAV_CLEARANCE = 96
 
@@ -143,7 +143,6 @@ export function useFabPosition() {
       suppressClickRef.current = true
       setDragging(true)
       updatePosition(clampPosition({ x: rect.left, y: rect.top }, button))
-      navigator.vibrate?.(30)
     }, LONG_PRESS_MS)
   }
 
