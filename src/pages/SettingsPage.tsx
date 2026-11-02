@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, LogOut, Monitor, Moon, Sun } from 'lucide-react'
+import { Activity, LogOut, Monitor, Moon, RotateCcw, Sun } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ import { useDeleteUser, useUpdateUser } from '@/api/hooks/auth'
 import { useMySettlements } from '@/api/hooks/balance'
 import { getApiErrorMessage } from '@/api/errors'
 import { cn } from '@/lib/utils'
+import { resetFabPosition } from '@/lib/useFabPosition'
 
 export default function SettingsPage() {
   const { user, logout } = useAuth()
@@ -41,6 +42,7 @@ export default function SettingsPage() {
         </CardHeader>
       </Card>
       <ThemeCard />
+      <FabPositionCard />
       <UsernameCard />
       <PasswordCard />
       <ServerStatusCard />
@@ -90,6 +92,31 @@ function ThemeCard() {
             </button>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function FabPositionCard() {
+  function handleReset() {
+    resetFabPosition()
+    toast.success('Posizione del pulsante + ripristinata')
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Posizione pulsante +</CardTitle>
+        <CardDescription>
+          Tieni premuto il pulsante per un secondo e trascinalo dove preferisci. Da tastiera puoi
+          spostarlo con Alt e le frecce direzionali.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" className="h-11 w-full" onClick={handleReset}>
+          <RotateCcw />
+          Ripristina posizione predefinita
+        </Button>
       </CardContent>
     </Card>
   )

@@ -7,6 +7,7 @@ import GlobalCreateBillDialog from '@/components/GlobalCreateBillDialog'
 import SendFriendRequestDialog from '@/components/SendFriendRequestDialog'
 import CreateGroupDialog from '@/components/CreateGroupDialog'
 import { cn } from '@/lib/utils'
+import { useFabPosition } from '@/lib/useFabPosition'
 import { useFriendshipRequestsCount } from '@/api/hooks/friends'
 
 // Bottom navigation mobile-first: tap target >= 44px (h-16), safe-area per iOS.
@@ -23,6 +24,16 @@ export default function AppLayout() {
   // Badge con il numero di richieste di amicizia ricevute in attesa.
   const { data: requestsCount = 0 } = useFriendshipRequestsCount()
   const [createOpen, setCreateOpen] = useState(false)
+  const {
+    buttonRef: fabRef,
+    position: fabPosition,
+    dragging: fabDragging,
+    handlePointerDown: handleFabPointerDown,
+    handlePointerMove: handleFabPointerMove,
+    handlePointerUp: handleFabPointerUp,
+    handlePointerCancel: handleFabPointerCancel,
+    handleClick: handleFabClick,
+  } = useFabPosition()
   const location = useLocation()
   const isFriendsList = useMatch('/friends') != null
   const isGroupsList = useMatch('/groups') != null
@@ -54,9 +65,31 @@ export default function AppLayout() {
       </main>
       {/* FAB contestuale: azione di creazione principale della schermata. */}
       <Button
+        ref={fabRef}
         aria-label={fabLabel}
-        className="ring-primary/60 fixed right-4 bottom-20 z-40 h-14 w-auto gap-1.5 rounded-lg px-4 text-sm font-bold shadow-lg ring-1 dark:shadow-[0_0_22px_rgb(52_211_153/0.35)]"
-        onClick={() => setCreateOpen(true)}
+        aria-description="Tieni premuto per spostare il pulsante. Da tastiera usa Alt e le frecce direzionali."
+        aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
+        title="Tieni premuto per spostare · Alt + frecce da tastiera"
+        style={
+          fabPosition
+            ? { left: fabPosition.x, top: fabPosition.y, right: 'auto', bottom: 'auto' }
+            : undefined
+        }
+        className={cn(
+          'ring-primary/60 fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 h-14 w-auto touch-none gap-1.5 rounded-lg px-4 text-sm font-bold shadow-lg ring-1 dark:shadow-[0_0_22px_rgb(52_211_153/0.35)]',
+          fabDragging
+            ? 'scale-105 cursor-grabbing ring-2 ring-offset-2 ring-offset-background active:translate-y-0'
+            : 'cursor-pointer',
+        )}
+        onPointerDown={handleFabPointerDown}
+        onPointerMove={handleFabPointerMove}
+        onPointerUp={handleFabPointerUp}
+        onPointerCancel={handleFabPointerCancel}
+        onContextMenu={(event) => event.preventDefault()}
+        onDragStart={(event) => event.preventDefault()}
+        onClick={(event) => {
+          if (!handleFabClick(event)) setCreateOpen(true)
+        }}
       >
         <Plus className="size-5" />
         {fabShortLabel}

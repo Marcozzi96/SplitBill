@@ -73,7 +73,12 @@ function renderAt(path: string) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   mockApi()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 // Il FAB cambia azione in base alla pagina corrente.
@@ -121,5 +126,37 @@ describe('AppLayout — FAB contestuale', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Contesto').textContent).toContain('Gruppo: Vacanze'),
     )
+  })
+})
+
+describe('AppLayout — posizione del FAB', () => {
+  function prepareFab() {
+    const fab = screen.getByRole('button', { name: 'Nuova spesa' })
+    fab.getBoundingClientRect = vi.fn().mockReturnValue({
+      left: 900,
+      top: 600,
+      right: 1000,
+      bottom: 656,
+      x: 900,
+      y: 600,
+      width: 100,
+      height: 56,
+      toJSON: vi.fn(),
+    })
+    fab.setPointerCapture = vi.fn()
+    fab.hasPointerCapture = vi.fn().mockReturnValue(false)
+    fab.releasePointerCapture = vi.fn()
+    return fab
+  }
+
+  it('può essere spostato con Alt e le frecce anche senza focus sul pulsante', () => {
+    renderAt('/')
+    const fab = prepareFab()
+    ;(document.activeElement as HTMLElement | null)?.blur()
+
+    fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true })
+
+    expect(fab.style.left).toBe('884px')
+    expect(localStorage.getItem('splitbill_fab_position')).toBe(JSON.stringify({ x: 884, y: 600 }))
   })
 })

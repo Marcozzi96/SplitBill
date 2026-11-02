@@ -94,6 +94,19 @@ describe('SettingsPage', () => {
     expect(localStorage.getItem('theme')).toBe('light')
   })
 
+  it('ripristina la posizione salvata del pulsante +', () => {
+    localStorage.setItem('splitbill_fab_position', JSON.stringify({ x: 250, y: 280 }))
+    const resetListener = vi.fn()
+    window.addEventListener('splitbill:reset-fab-position', resetListener)
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ripristina posizione predefinita' }))
+
+    expect(localStorage.getItem('splitbill_fab_position')).toBeNull()
+    expect(resetListener).toHaveBeenCalledOnce()
+    window.removeEventListener('splitbill:reset-fab-position', resetListener)
+  })
+
   it('il cambio username chiama /user/update e sostituisce il token', async () => {
     const auth = { token: 'nuovo-token', user: { userId: 1, username: 'luigi' } }
     mockedPut.mockResolvedValue({ data: auth })
