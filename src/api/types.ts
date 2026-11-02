@@ -117,13 +117,13 @@ export interface paths {
         get?: never;
         /**
          * Modifica una spesa
-         * @description Consente la modifica a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Le spese personali devono mantenere esattamente 2 partecipanti distinti (buyer + debitori nella ripartizione). Con buyerId si può cambiare chi ha pagato.
+         * @description Consente la modifica a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Le spese personali devono mantenere esattamente 2 partecipanti distinti (buyer + debitori nella ripartizione). Con buyerId si può cambiare chi ha pagato. Se la spesa coinvolge ex membri, la modifica non può cambiare il loro debito o credito.
          */
         put: operations["updateBill"];
         post?: never;
         /**
          * Elimina una spesa
-         * @description Consente l'eliminazione a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore)
+         * @description Consente l'eliminazione a qualsiasi membro attivo del gruppo; per le spese personali a chiunque sia coinvolto (buyer o debitore). Non è consentita se cambierebbe i saldi degli ex membri del gruppo
          */
         delete: operations["deleteBill"];
         options?: never;
@@ -919,6 +919,7 @@ export interface components {
             amount?: number;
             buyer?: components["schemas"]["UserDTO"];
             purchasedItems?: string;
+            formerParticipants?: components["schemas"]["UserDTO"][];
             transactions?: components["schemas"]["TransactionDTO"][];
         };
         GroupDTO: {
@@ -992,6 +993,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqSenDTO"][];
@@ -1001,19 +1004,17 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageNumber?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            paged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1036,6 +1037,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["FriendshipReqRecDTO"][];
@@ -1045,8 +1048,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageUserDTO: {
@@ -1054,6 +1055,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["UserDTO"][];
@@ -1063,8 +1066,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageShoppingItemDTO: {
@@ -1072,6 +1073,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ShoppingItemDTO"][];
@@ -1081,8 +1084,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PagePaymentDTO: {
@@ -1090,6 +1091,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaymentDTO"][];
@@ -1099,8 +1102,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageGroupDTO: {
@@ -1108,6 +1109,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["GroupDTO"][];
@@ -1117,8 +1120,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         SettlementDTO: {
@@ -1161,6 +1162,8 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["BillDTO"][];
@@ -1170,8 +1173,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         Cpu: {

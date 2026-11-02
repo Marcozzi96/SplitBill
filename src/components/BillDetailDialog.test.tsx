@@ -86,6 +86,16 @@ describe('BillDetailDialog', () => {
     expect(screen.getByText('Totale ripartito')).toBeTruthy()
   })
 
+  it('risolve i nomi degli ex partecipanti dal DTO', () => {
+    renderDialog({
+      transactions: [{ transactionId: 13, userId: 99, amount: -20 }],
+      formerParticipants: [{ userId: 99, username: 'exmembro' }],
+    })
+
+    expect(screen.getByText('exmembro')).toBeTruthy()
+    expect(screen.queryByText('UtenteEliminato')).toBeNull()
+  })
+
   it('usa il fallback di resolveUsername per gli userId sconosciuti', () => {
     renderDialog({ transactions: [{ transactionId: 13, userId: 99, amount: -20 }] })
 

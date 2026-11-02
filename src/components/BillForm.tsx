@@ -80,6 +80,7 @@ export default function BillForm({
   // Nelle spese personali i partecipanti sono fissi (io + un amico) e non possono
   // essere rimossi dalla ripartizione.
   const lockedSelection = personal === true
+  const economicFieldsLocked = (bill?.formerParticipants?.length ?? 0) > 0
   const [description, setDescription] = useState(bill?.description ?? '')
   const [notes, setNotes] = useState(bill?.notes ?? '')
   const [amount, setAmount] = useState(
@@ -243,6 +244,11 @@ export default function BillForm({
             onChange={(e) => setDescription(e.target.value)}
           />
         </Field>
+        {economicFieldsLocked && (
+          <p className="bg-muted/60 text-muted-foreground rounded-lg p-3 text-sm">
+            La spesa coinvolge ex membri: puoi modificare solo descrizione e note.
+          </p>
+        )}
         <Field>
           <FieldLabel htmlFor="billAmount">Importo (€)</FieldLabel>
           <MoneyInput
@@ -251,6 +257,7 @@ export default function BillForm({
             placeholder="0,00"
             value={amount}
             onChange={setAmount}
+            disabled={economicFieldsLocked}
           />
         </Field>
         <Field>
@@ -263,6 +270,7 @@ export default function BillForm({
             id="billBuyer"
             value={buyerId != null ? String(buyerId) : ''}
             onValueChange={(value) => setBuyerId(Number(value))}
+            disabled={economicFieldsLocked}
           >
             {buyerOptions.map((m) => (
               <SelectItem key={m.userId} value={String(m.userId)}>
@@ -276,7 +284,13 @@ export default function BillForm({
         <Field>
           <div className="flex items-center justify-between">
             <FieldLabel>Ripartizione</FieldLabel>
-            <Button type="button" variant="outline" size="sm" onClick={handleSplitEqually}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSplitEqually}
+              disabled={economicFieldsLocked}
+            >
               <span aria-hidden className="text-muted-foreground">
                 ÷
               </span>
@@ -292,12 +306,14 @@ export default function BillForm({
                   <label
                     className={cn(
                       'flex min-h-11 min-w-0 items-center gap-2',
-                      locked || lockedSelection ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                      locked || lockedSelection || economicFieldsLocked
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-pointer',
                     )}
                   >
                     <Checkbox
                       checked={selected}
-                      disabled={locked || lockedSelection}
+                      disabled={locked || lockedSelection || economicFieldsLocked}
                       onChange={() => toggleMember(member.userId!)}
                       aria-label={`Partecipa ${member.username}`}
                     />
@@ -313,7 +329,7 @@ export default function BillForm({
                     className="w-28 text-right"
                     placeholder="0,00"
                     aria-label={`Quota ${member.username}`}
-                    disabled={!selected}
+                    disabled={!selected || economicFieldsLocked}
                     value={shares[member.userId!] ?? ''}
                     onChange={(v) =>
                       setShares((prev) => ({ ...prev, [member.userId!]: v }))

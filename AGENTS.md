@@ -49,7 +49,7 @@ src/
 │   # FriendPicker.tsx: checkbox list per selezionare amici (creazione gruppo, aggiunta membri)
 │   # BalanceRow.tsx: riga condivisa delle liste Amici/Gruppi (link al dettaglio, saldo netto a
 │   #   destra da /balance/settlements aggregato in lib/settlements.ts, cursore ">" in hover)
-│   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; BillCard.tsx: card di una spesa
+│   # BillForm.tsx: form creazione/modifica spesa con checkbox partecipanti, quote e "Pagato da"; con BillDTO.formerParticipants non vuoto blocca i dati economici e consente solo descrizione/note; BillCard.tsx: card di una spesa
 │   #   (in creazione di spesa di gruppo anche la sezione "Articoli acquistati" dalla lista della spesa)
 │   #   (cliccabile con prop onClick: apre il dettaglio read-only)
 │   # BillDetailDialog.tsx: modale di sola lettura con il dettaglio di una spesa (quote con nomi risolti via resolveUsername)

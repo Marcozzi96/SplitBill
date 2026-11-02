@@ -49,7 +49,7 @@ function InitialAvatar({ name }: { name: string }) {
 // Modale di sola lettura con il dettaglio di una spesa: si apre cliccando la
 // BillCard. Le azioni (modifica/elimina) restano sui bottoni della card.
 // `resolveUsername` traduce gli userId delle transazioni in username (i DTO
-// delle transazioni non lo includono).
+// delle transazioni non lo includono); gli ex membri arrivano in formerParticipants.
 export default function BillDetailDialog({
   bill,
   open,
@@ -135,8 +135,11 @@ export default function BillDetailDialog({
                 </p>
                 <ul className="mt-2 flex flex-col">
                   {transactions.map((t, i) => {
+                    const formerName = active.formerParticipants?.find(
+                      (participant) => participant.userId === t.userId,
+                    )?.username
                     const name =
-                      t.userId != null ? resolveUsername(t.userId) : 'UtenteEliminato'
+                      formerName ?? (t.userId != null ? resolveUsername(t.userId) : 'UtenteEliminato')
                     return (
                       <li
                         key={t.transactionId ?? i}

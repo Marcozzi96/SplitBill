@@ -249,6 +249,42 @@ describe('BillForm', () => {
     expect(amount).toHaveProperty('value', '15,50')
   })
 
+  it('con ex membri blocca i dati economici e invia le quote originali', () => {
+    const bill: BillDTO = {
+      billId: 3,
+      description: 'Cena',
+      amount: 10,
+      notes: 'note originali',
+      buyer: { userId: 1, username: 'mario' },
+      formerParticipants: [{ userId: 2, username: 'luigi' }],
+      transactions: [
+        { userId: 2, amount: -10 },
+        { userId: 1, amount: 10 },
+      ],
+    }
+    const onSubmit = renderForm({ bill })
+
+    expect(screen.getByText(/puoi modificare solo descrizione e note/)).toBeTruthy()
+    expect(screen.getByLabelText('Importo (€)')).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('Pagato da')).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('Partecipa luigi')).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('Quota luigi')).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: 'Dividi equamente' })).toHaveProperty('disabled', true)
+
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Cena aggiornata' } })
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'nuove note' } })
+    submit()
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      description: 'Cena aggiornata',
+      notes: 'nuove note',
+      amountCents: 1000,
+      buyerId: 1,
+      sharesCents: { 2: 1000 },
+      shoppingItemIds: [],
+    })
+  })
+
   it('in modifica un eliminato con quota preesistente resta selezionato ed editabile', () => {
     // Spesa da 10€ pagata da mario: 4€ a carico dell'eliminato, 6€ di luigi.
     const bill: BillDTO = {

@@ -151,6 +151,12 @@ function EditBillDialogContent({
 }) {
   const updateMutation = useUpdateBill(bill.billId!)
   const [error, setError] = useState<string | null>(null)
+  const formMembers = [
+    ...members,
+    ...(bill.formerParticipants ?? []).filter(
+      (former) => !members.some((member) => member.userId === former.userId),
+    ),
+  ]
 
   function handleSubmit(values: BillFormValues) {
     setError(null)
@@ -180,12 +186,14 @@ function EditBillDialogContent({
         <DialogHeader>
           <DialogTitle>Modifica spesa</DialogTitle>
           <DialogDescription>
-            Aggiorna descrizione, importo, note e ripartizione della spesa.
+            {(bill.formerParticipants?.length ?? 0) > 0
+              ? 'Aggiorna descrizione e note; i dati economici sono bloccati perché coinvolgono ex membri.'
+              : 'Aggiorna descrizione, importo, note e ripartizione della spesa.'}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <BillForm
-            members={members}
+            members={formMembers}
             bill={bill}
             personal={personal}
             formId="edit-bill-form"
@@ -210,7 +218,7 @@ function EditBillDialogContent({
   )
 }
 
-// Eliminazione spesa: stesse regole della modifica (membri del gruppo / coinvolti).
+// Eliminazione spesa: membri del gruppo / coinvolti; bloccata se coinvolge ex membri.
 export function DeleteBillDialog({
   bill,
   open,
@@ -246,8 +254,10 @@ function DeleteBillDialogContent({
 }) {
   const deleteMutation = useDeleteBill()
   const [error, setError] = useState<string | null>(null)
+  const deletionLocked = (bill.formerParticipants?.length ?? 0) > 0
 
   function handleDelete() {
+    if (deletionLocked) return
     setError(null)
     deleteMutation.mutate(bill.billId!, {
       onSuccess: () => {
@@ -264,7 +274,9 @@ function DeleteBillDialogContent({
         <DialogHeader>
           <DialogTitle>Elimina spesa</DialogTitle>
           <DialogDescription>
-            Eliminare &quot;{bill.description}&quot;? L&apos;operazione è definitiva.
+            {deletionLocked
+              ? 'Non puoi eliminare questa spesa perché cambierebbe i saldi già trasferiti degli ex membri.'
+              : `Eliminare "${bill.description}"? L'operazione è definitiva.`}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>{error && <FieldError>{error}</FieldError>}</DialogBody>
@@ -272,7 +284,11 @@ function DeleteBillDialogContent({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annulla
           </Button>
-          <Button variant="destructive" disabled={deleteMutation.isPending} onClick={handleDelete}>
+          <Button
+            variant="destructive"
+            disabled={deleteMutation.isPending || deletionLocked}
+            onClick={handleDelete}
+          >
             Elimina
           </Button>
         </DialogFooter>

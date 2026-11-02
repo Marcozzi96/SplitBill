@@ -344,6 +344,47 @@ describe('GroupDetailPage', () => {
     )
   })
 
+  it('modifica solo i metadati di una spesa con un ex membro', async () => {
+    const billWithFormer = {
+      ...bill,
+      formerParticipants: [{ userId: 3, username: 'anna' }],
+      transactions: [
+        { transactionId: 1, userId: 3, amount: -50 },
+        { transactionId: 2, userId: 1, amount: 50 },
+      ],
+    }
+    mockApi({ bills: { content: [billWithFormer], totalPages: 1, number: 0 } })
+    mockedPut.mockResolvedValue({ data: billWithFormer })
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifica Cena' }))
+
+    expect(await screen.findByLabelText('Partecipa anna')).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('Quota anna')).toHaveProperty('value', '50,00')
+    expect(screen.getByLabelText('Quota anna')).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('Importo (€)')).toHaveProperty('disabled', true)
+    fireEvent.change(screen.getByLabelText('Descrizione'), { target: { value: 'Cena corretta' } })
+    fireEvent.submit(document.querySelector('[data-slot="dialog-content"] form')!)
+
+    await waitFor(() =>
+      expect(mockedPut).toHaveBeenCalledWith('/bills/9', { 3: 50 }, {
+        params: { description: 'Cena corretta', amount: 50, notes: 'Pizzeria', buyerId: 1 },
+      }),
+    )
+  })
+
+  it('non consente eliminazione di una spesa con un ex membro', async () => {
+    const billWithFormer = { ...bill, formerParticipants: [{ userId: 2, username: 'luigi' }] }
+    mockApi({ bills: { content: [billWithFormer], totalPages: 1, number: 0 } })
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Elimina Cena' }))
+
+    expect(await screen.findByText(/saldi già trasferiti degli ex membri/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Elimina' })).toHaveProperty('disabled', true)
+    expect(mockedDelete).not.toHaveBeenCalledWith('/bills/9')
+  })
+
   it('blocca la modifica se la somma delle quote non pareggia l’importo', async () => {
     mockApi({ bills: { content: [bill], totalPages: 1, number: 0 } })
     renderDetail()
