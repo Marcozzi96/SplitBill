@@ -542,6 +542,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/groups/{groupId}/simplified-settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recupera i settlement semplificati del gruppo
+         * @description Restituisce i trasferimenti netti tra tutti i membri del gruppo
+         */
+        get: operations["getSimplifiedGroupSettlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/groups/{groupId}/settlements": {
         parameters: {
             query?: never;
@@ -989,11 +1009,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
-            /** Format: int32 */
-            pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1101,6 +1121,11 @@ export interface components {
             last?: boolean;
             empty?: boolean;
         };
+        SettlementDTO: {
+            debtor?: components["schemas"]["UserDTO"];
+            creditor?: components["schemas"]["UserDTO"];
+            amount?: number;
+        };
         UserSettlementDTO: {
             counterparty?: components["schemas"]["UserDTO"];
             amount?: number;
@@ -1109,11 +1134,6 @@ export interface components {
             /** Format: int64 */
             groupId?: number;
             groupName?: string;
-        };
-        SettlementDTO: {
-            debtor?: components["schemas"]["UserDTO"];
-            creditor?: components["schemas"]["UserDTO"];
-            amount?: number;
         };
         GroupMemberDTO: {
             /** Format: int64 */
@@ -2573,6 +2593,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageGroupDTO"];
+                };
+            };
+        };
+    };
+    getSimplifiedGroupSettlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement restituiti */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDTO"][];
+                };
+            };
+            /** @description L'utente non fa parte del gruppo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDTO"][];
+                };
+            };
+            /** @description Gruppo non trovato */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDTO"][];
                 };
             };
         };

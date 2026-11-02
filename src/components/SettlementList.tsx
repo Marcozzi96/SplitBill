@@ -23,6 +23,129 @@ import { useCreatePayment, useForgiveDebt } from '@/api/hooks/balance'
 import type { components } from '@/api/types'
 
 type UserSettlementDTO = components['schemas']['UserSettlementDTO']
+type SettlementDTO = components['schemas']['SettlementDTO']
+
+export function GroupSettlementList({
+  settlements,
+  currentUserId,
+  groupId,
+  groupName,
+  onPay,
+}: {
+  settlements: SettlementDTO[]
+  currentUserId?: number
+  groupId: number
+  groupName: string
+  onPay: (settlement: UserSettlementDTO) => void
+}) {
+  const [deletedSettlement, setDeletedSettlement] = useState<UserSettlementDTO | null>(null)
+
+  if (settlements.length === 0) {
+    return <p className="text-muted-foreground py-6 text-center">Quote bilanciate.</p>
+  }
+
+  const deletedBadge = (settlement: UserSettlementDTO | null) =>
+    settlement && (
+      <button
+        type="button"
+        aria-label="Utente eliminato"
+        onClick={() => setDeletedSettlement(settlement)}
+        className="text-destructive -my-3 inline-flex h-11 items-center justify-center px-2 align-middle"
+      >
+        <TriangleAlert className="size-4" aria-hidden />
+      </button>
+    )
+
+  return (
+    <div className="flex flex-col gap-2">
+      {settlements.map((settlement, i) => {
+        const debtorId = settlement.debtor?.userId
+        const creditorId = settlement.creditor?.userId
+        const isCurrentDebtor = debtorId === currentUserId
+        const isCurrentCreditor = creditorId === currentUserId
+        const deletedDebtor = settlement.debtor?.deleted
+          ? {
+              counterparty: settlement.debtor,
+              amount: settlement.amount,
+              direction: isCurrentCreditor ? ('CREDIT' as const) : ('DEBT' as const),
+              groupId,
+              groupName,
+            }
+          : null
+        const deletedCreditor = settlement.creditor?.deleted
+          ? {
+              counterparty: settlement.creditor,
+              amount: settlement.amount,
+              direction: 'DEBT' as const,
+              groupId,
+              groupName,
+            }
+          : null
+
+        return (
+          <Card key={`${debtorId}-${creditorId}-${i}`}>
+            <CardContent className="flex items-center justify-between gap-2 py-3">
+              <p className="min-w-0 text-sm">
+                {isCurrentCreditor ? (
+                  <>
+                    <span className="text-chart-2 font-medium">{settlement.debtor?.username}</span>
+                    {deletedBadge(deletedDebtor)} ti deve{' '}
+                    <span className="text-success font-medium">{formatEuro(settlement.amount)}</span>
+                  </>
+                ) : isCurrentDebtor ? (
+                  <>
+                    Devi{' '}
+                    <span className="text-destructive font-medium">
+                      {formatEuro(settlement.amount)}
+                    </span>{' '}
+                    a{' '}
+                    <span className="text-chart-2 font-medium">{settlement.creditor?.username}</span>
+                    {deletedBadge(deletedCreditor)}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-chart-2 font-medium">{settlement.debtor?.username}</span>
+                    {deletedBadge(deletedDebtor)} deve{' '}
+                    <span className="text-destructive font-medium">
+                      {formatEuro(settlement.amount)}
+                    </span>{' '}
+                    a{' '}
+                    <span className="text-chart-2 font-medium">{settlement.creditor?.username}</span>
+                    {deletedBadge(deletedCreditor)}
+                  </>
+                )}
+              </p>
+              {isCurrentDebtor && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    onPay({
+                      counterparty: settlement.creditor,
+                      amount: settlement.amount,
+                      direction: 'DEBT',
+                      groupId,
+                      groupName,
+                    })
+                  }
+                >
+                  Rimborsa
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
+      <DeletedUserDialog
+        settlement={deletedSettlement}
+        open={deletedSettlement != null}
+        onOpenChange={(open) => {
+          if (!open) setDeletedSettlement(null)
+        }}
+      />
+    </div>
+  )
+}
 
 function contextLabel(settlement: UserSettlementDTO): string {
   return settlement.groupName ? `gruppo: ${settlement.groupName}` : 'personale'

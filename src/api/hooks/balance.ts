@@ -4,6 +4,7 @@ import type { components } from '../types'
 
 type UserBalanceDTO = components['schemas']['UserBalanceDTO']
 type UserSettlementDTO = components['schemas']['UserSettlementDTO']
+type SettlementDTO = components['schemas']['SettlementDTO']
 type PagePaymentDTO = components['schemas']['PagePaymentDTO']
 type PaymentDTO = components['schemas']['PaymentDTO']
 
@@ -44,6 +45,15 @@ export function useGroupSettlements(groupId: number) {
     queryKey: [...GROUPS_ROOT, 'settlements', groupId],
     queryFn: async () =>
       (await api.get<UserSettlementDTO[]>(`/groups/${groupId}/settlements`)).data,
+  })
+}
+
+// Trasferimenti netti tra tutti i membri del gruppo.
+export function useGroupSimplifiedSettlements(groupId: number) {
+  return useQuery({
+    queryKey: [...GROUPS_ROOT, 'simplified-settlements', groupId],
+    queryFn: async () =>
+      (await api.get<SettlementDTO[]>(`/groups/${groupId}/simplified-settlements`)).data,
   })
 }
 

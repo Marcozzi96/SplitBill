@@ -120,8 +120,9 @@ src/
 ### Rimborso
 
 - Da una voce di settlement ("devi X a Y") → `POST /payments`.
-- Il backend rifiuta con **409** se l'importo supera il debito effettivo: pre-compilare l'importo massimo con il valore del settlement.
-- Passare sempre il `groupId` letto dal `UserSettlementDTO`: i rimborsi **senza** `groupId` saldano solo debiti personali (settlement con `groupId` null), non quelli dentro i gruppi.
+- Il backend rifiuta con **409** se l'importo supera il debito effettivo: pre-compilare l'importo massimo con il valore del settlement. Nei gruppi il limite è calcolato sui saldi netti e il payee può non avere un debito pairwise diretto; nei rimborsi personali resta il debito diretto.
+- Nel dialog "Bilancio del gruppo" usare `GET /groups/{groupId}/simplified-settlements`: mostrare i trasferimenti netti tra tutti i membri e "Rimborsa" solo sulle righe di cui l'utente autenticato è debitore.
+- Passare sempre il `groupId` del contesto: i rimborsi **senza** `groupId` saldano solo debiti personali (settlement con `groupId` null), non quelli dentro i gruppi.
 
 ### Eliminazione account
 
@@ -131,7 +132,7 @@ src/
 
 ### Uscita da un gruppo
 
-- `DELETE /groups/leave/{groupId}`: i debiti/crediti dell'uscente **si estinguono nel gruppo** e vengono trasferiti a livello personale (settlement con `groupId` null, visibili in `/balance/settlements` e saldabili con `POST /payments` senza `groupId`).
+- `DELETE /groups/leave/{groupId}`: i trasferimenti semplificati che coinvolgono l'uscente **si estinguono nel gruppo** e diventano personali. Per ciascuno il BE crea una spesa personale "Trasferimento da <gruppo>" e un rimborso automatico nel gruppo; i debiti personali restano visibili in `/balance/settlements` e saldabili con `POST /payments` senza `groupId`. Saldo netto zero → nessun documento; i rapporti tra gli altri membri restano nel gruppo.
 - Dopo l'uscita il gruppo sparisce da `GET /groups` e l'ex-membro non può più operarci (i check di membership considerano solo i membri attivi).
 
 ### Eliminazione gruppo (solo admin)
@@ -222,13 +223,14 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | GET | `/groups?page=&size=` | paginata | `Page<GroupDTO>` | Gruppi dell'utente (solo membership attive: i gruppi da cui è uscito non compaiono) |
 | GET | `/groups/{groupId}` | path | `GroupDTO` | Solo membri |
 | PUT | `/groups/{groupId}?name=&description=` | query | `GroupDTO` | Solo admin (403) |
-| DELETE | `/groups/{groupId}?force=` | query `force` (default false) | `200` | Solo admin; **409 con debiti pendenti** se `force=false` |
+| DELETE | `/groups/{groupId}?force=` | query `force` (default false) | `200` | Solo admin; **409 con debiti pendenti** se `force=false`. Elimina definitivamente spese, rimborsi e saldi del gruppo; con `force=true` anche i debiti pendenti |
 | POST | `/groups/addUsers/{groupId}` | body `number[]` (userId amici) | `GroupDTO` | |
 | DELETE | `/groups/leave/{groupId}` | path | `200` | Uscita soft; se ultimo membro il gruppo è eliminato. **I debiti/crediti dell'uscente si estinguono nel gruppo e diventano personali** (settlement con `groupId` null) |
 | GET | `/groups/{groupId}/members` | path | `GroupMemberDTO[]` | Membri attivi con ruolo |
 | GET | `/groups/{groupId}/settlement-status` | path | `SettlementDTO[]` | Debiti pendenti netti (al netto di rimborsi e uscite) tra i membri — per dialog eliminazione |
 | GET | `/groups/{groupId}/balance` | path | `UserBalanceDTO` | Saldo dell'utente autenticato nel gruppo |
-| GET | `/groups/{groupId}/settlements` | path | `UserSettlementDTO[]` | "Chi deve a chi" dal punto di vista dell'utente, nel gruppo |
+| GET | `/groups/{groupId}/settlements` | path | `UserSettlementDTO[]` | "Chi deve a chi" pairwise dal punto di vista dell'utente, nel gruppo |
+| GET | `/groups/{groupId}/simplified-settlements` | path | `SettlementDTO[]` | Trasferimenti netti tra tutti i membri, usati dal dialog "Bilancio del gruppo" |
 
 ### 6.7 Endpoint — Spese (`/bills`, autenticati)
 
@@ -280,7 +282,7 @@ Query params: `page` (default 0), `size` (default 20). Risposta `Page<T>`:
 | Amici | `/user/getFriends`, `/user/getFriendshipReq*`, send/accept/refuse/cancel |
 | Dettaglio amico (tab Spese/Rimborsi) | `/bills/getMyPersonalBills?friendId=`, `GET /payments?friendId=` |
 | Lista gruppi | `/groups`, `/groups/create` |
-| Dettaglio gruppo (tab Spese/Rimborsi) | `/groups/{id}`, `/groups/{id}/members`, `/bills/group/{id}`, `/groups/{id}/balance`, `/groups/{id}/settlements`, `GET /payments?groupId=` |
+| Dettaglio gruppo (tab Spese/Rimborsi) | `/groups/{id}`, `/groups/{id}/members`, `/bills/group/{id}`, `/groups/{id}/balance`, `/groups/{id}/simplified-settlements`, `GET /payments?groupId=` |
 | Nuova spesa (dettaglio o FAB globale) | `/groups/{id}/members` + `POST /bills/new` |
 | Profilo | `/user/me`, `/user/update`, `/user/delete` |
 

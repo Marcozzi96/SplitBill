@@ -54,7 +54,7 @@ function mockApi({
     if (url === '/groups/5/members') return Promise.resolve({ data: membersData })
     if (url === '/groups/5/settlement-status') return Promise.resolve({ data: settlements })
     if (url === '/groups/5/balance') return Promise.resolve({ data: balanceData })
-    if (url === '/groups/5/settlements') return Promise.resolve({ data: groupSettlements })
+    if (url === '/groups/5/simplified-settlements') return Promise.resolve({ data: groupSettlements })
     if (url === '/user/getFriends') return Promise.resolve({ data: friends })
     if (url === '/bills/group/5') return Promise.resolve({ data: bills })
     if (url === '/shopping-items/group/5') return Promise.resolve({ data: shoppingItems })
@@ -64,7 +64,7 @@ function mockApi({
 }
 
 function renderDetail(currentUserId = 1) {
-  const queryClient = new QueryClient()
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const authValue = {
     user: { userId: currentUserId, username: 'mario', email: 'mario@example.com' },
     token: 'token',
@@ -185,6 +185,7 @@ describe('GroupDetailPage', () => {
     renderDetail()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Elimina gruppo' }))
+    expect(screen.getByText(/rimuoverà spese, rimborsi e saldi del gruppo/)).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: 'Elimina' }))
 
     // Dopo il 409 vengono caricati e mostrati i debiti pendenti.
@@ -355,16 +356,14 @@ describe('GroupDetailPage', () => {
     expect(mockedPut).not.toHaveBeenCalled()
   })
 
-  it('mostra saldo e settlement del gruppo e rimborsa passando il groupId', async () => {
+  it('mostra saldo e settlement semplificati del gruppo e rimborsa passando il groupId', async () => {
     mockApi({
       balanceData: { userId: 1, username: 'mario', totalPaid: 10, totalOwed: 30, netBalance: -20 },
       groupSettlements: [
         {
-          counterparty: { userId: 2, username: 'luigi' },
+          debtor: { userId: 1, username: 'mario' },
+          creditor: { userId: 2, username: 'luigi' },
           amount: 20,
-          direction: 'DEBT',
-          groupId: 5,
-          groupName: 'Vacanze',
         },
       ],
     })
@@ -375,6 +374,9 @@ describe('GroupDetailPage', () => {
     await screen.findByText('Il tuo saldo nel gruppo')
     expect(screen.getByText('-20,00 €')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Dettagli (1)' }))
+    expect(
+      await screen.findByText((_, element) => element?.tagName === 'P' && element?.textContent?.replace(/\s+/g, ' ') === 'Devi 20,00 € a luigi'),
+    ).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: 'Rimborsa' }))
 
     // Importo pre-compilato al massimo del debito; groupId passato al backend.
@@ -386,6 +388,94 @@ describe('GroupDetailPage', () => {
         params: { payeeId: 2, amount: 20, groupId: 5 },
       }),
     )
+    expect(mockedGet).toHaveBeenCalledWith('/groups/5/simplified-settlements')
+  })
+
+  it('mostra quote bilanciate quando non ci sono trasferimenti semplificati', async () => {
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli (0)' }))
+    expect(await screen.findByText('Quote bilanciate.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Rimborsa' })).toBeNull()
+  })
+
+  it('mostra i settlement tra altri membri senza azione di rimborso', async () => {
+    mockApi({
+      groupSettlements: [
+        {
+          debtor: { userId: 2, username: 'luigi' },
+          creditor: { userId: 3, username: 'anna' },
+          amount: 12.5,
+        },
+      ],
+    })
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli (1)' }))
+    expect(await screen.findByText('luigi')).toBeTruthy()
+    expect(screen.getByText('anna')).toBeTruthy()
+    expect(screen.getByText('12,50 €')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Rimborsa' })).toBeNull()
+  })
+
+  it('usa "ti deve" quando l’utente autenticato è il creditore', async () => {
+    mockApi({
+      groupSettlements: [
+        {
+          debtor: { userId: 2, username: 'luigi' },
+          creditor: { userId: 1, username: 'mario' },
+          amount: 14.26,
+        },
+      ],
+    })
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli (1)' }))
+    expect(
+      await screen.findByText((_, element) => element?.tagName === 'P' && element?.textContent?.replace(/\s+/g, ' ') === 'luigi ti deve 14,26 €'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Rimborsa' })).toBeNull()
+  })
+
+  it('consente al creditore di dimenticare il debito semplificato di un utente eliminato', async () => {
+    mockApi({
+      groupSettlements: [
+        {
+          debtor: { userId: 2, username: 'UtenteEliminato', deleted: true },
+          creditor: { userId: 1, username: 'mario' },
+          amount: 12,
+        },
+      ],
+    })
+    mockedPost.mockResolvedValue({ data: { paymentId: 8 } })
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli (1)' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Utente eliminato' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Dimentica il debito' }))
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/payments/forgive', null, {
+        params: { payerId: 2, groupId: 5 },
+      }),
+    )
+  })
+
+  it('gestisce errore e retry dei settlement semplificati', async () => {
+    let fail = true
+    const defaultGet = mockedGet.getMockImplementation()!
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/groups/5/simplified-settlements' && fail) {
+        return Promise.reject(new Error('offline'))
+      }
+      return defaultGet(url)
+    })
+    renderDetail()
+
+    await screen.findByRole('button', { name: 'Riprova' })
+    fail = false
+    fireEvent.click(screen.getByRole('button', { name: 'Riprova' }))
+    expect(await screen.findByRole('button', { name: 'Dettagli (0)' })).toBeTruthy()
   })
 
   it('nel tab Rimborsi mostra tutti i rimborsi del gruppo, anche tra altri membri', async () => {

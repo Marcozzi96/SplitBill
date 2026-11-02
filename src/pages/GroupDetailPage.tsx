@@ -24,14 +24,14 @@ import BillDetailDialog from '@/components/BillDetailDialog'
 import { DeleteBillDialog, EditBillDialog, CreateBillDialog } from '@/components/BillDialogs'
 import PaymentsList from '@/components/PaymentsList'
 import ShoppingListDialog from '@/components/ShoppingListDialog'
-import { SettlementList, PaySettlementDialog } from '@/components/SettlementList'
+import { GroupSettlementList, PaySettlementDialog } from '@/components/SettlementList'
 import { netBalanceClass } from '@/lib/money'
 import { useOpenCount, useRetained } from '@/lib/useRetained'
 import { getApiErrorMessage } from '@/api/errors'
 import { useAuth } from '@/auth/auth-context'
 import { useFriends, useSendFriendshipRequest } from '@/api/hooks/friends'
 import { useGroupBills } from '@/api/hooks/bills'
-import { useGroupBalance, useGroupSettlements } from '@/api/hooks/balance'
+import { useGroupBalance, useGroupSimplifiedSettlements } from '@/api/hooks/balance'
 import {
   getGroupSettlementStatus,
   useAddGroupMembers,
@@ -192,7 +192,7 @@ function GroupDetailBody({
         </CardContent>
       </Card>
 
-      <GroupBalanceSection groupId={groupId} />
+      <GroupBalanceSection groupId={groupId} groupName={name} />
 
       <Tabs defaultValue="spese">
         <div className="flex items-center justify-between gap-2">
@@ -256,9 +256,9 @@ function GroupDetailBody({
 
 // --- Sezione bilancio del gruppo: card con saldo + modale "chi deve a chi" ---
 
-function GroupBalanceSection({ groupId }: { groupId: number }) {
+function GroupBalanceSection({ groupId, groupName }: { groupId: number; groupName: string }) {
   const balanceQuery = useGroupBalance(groupId)
-  const settlementsQuery = useGroupSettlements(groupId)
+  const settlementsQuery = useGroupSimplifiedSettlements(groupId)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   if (balanceQuery.isPending || settlementsQuery.isPending) {
@@ -312,7 +312,11 @@ function GroupBalanceSection({ groupId }: { groupId: number }) {
             <DialogDescription>Chi deve a chi in questo gruppo.</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <GroupSettlementsDialogBody settlements={settlements} />
+            <GroupSettlementsDialogBody
+              settlements={settlements}
+              groupId={groupId}
+              groupName={groupName}
+            />
           </DialogBody>
         </DialogContent>
       </Dialog>
@@ -321,12 +325,27 @@ function GroupBalanceSection({ groupId }: { groupId: number }) {
 }
 
 // Corpo del modale bilancio: lista "chi deve a chi" con dialog di rimborso.
-function GroupSettlementsDialogBody({ settlements }: { settlements: UserSettlementDTO[] }) {
+function GroupSettlementsDialogBody({
+  settlements,
+  groupId,
+  groupName,
+}: {
+  settlements: SettlementDTO[]
+  groupId: number
+  groupName: string
+}) {
   const [paying, setPaying] = useState<UserSettlementDTO | null>(null)
+  const { user } = useAuth()
 
   return (
     <>
-      <SettlementList settlements={settlements} onPay={setPaying} />
+      <GroupSettlementList
+        settlements={settlements}
+        currentUserId={user?.userId}
+        groupId={groupId}
+        groupName={groupName}
+        onPay={setPaying}
+      />
       <PaySettlementDialog
         settlement={paying}
         open={paying != null}
@@ -888,7 +907,7 @@ function DeleteGroupDialog({
           <DialogTitle>Elimina gruppo</DialogTitle>
           <DialogDescription>
             {debts === null
-              ? "L'eliminazione è definitiva. Vuoi procedere?"
+              ? "L'eliminazione è definitiva e rimuoverà spese, rimborsi e saldi del gruppo. Vuoi procedere?"
               : 'Ci sono debiti pendenti tra i membri. Eliminando il gruppo andranno persi.'}
           </DialogDescription>
         </DialogHeader>
