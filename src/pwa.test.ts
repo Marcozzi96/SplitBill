@@ -1,9 +1,13 @@
 import { registerAppServiceWorker } from './pwa'
 import { registerSW } from 'virtual:pwa-register'
+import { toast, type Action } from 'sonner'
 
 vi.mock('virtual:pwa-register', () => ({ registerSW: vi.fn() }))
+vi.mock('sonner', () => ({ toast: { info: vi.fn() } }))
 
 type RegisterOptions = Parameters<typeof registerSW>[0]
+
+const updateServiceWorker = vi.fn()
 
 function getRegistrationOptions(): NonNullable<RegisterOptions> {
   return vi.mocked(registerSW).mock.calls[0][0]!
@@ -21,7 +25,9 @@ function createRegistration(installing: ServiceWorker | null = null) {
 describe('registerAppServiceWorker', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.mocked(registerSW).mockClear()
+    vi.mocked(registerSW).mockReset().mockReturnValue(updateServiceWorker)
+    vi.mocked(toast.info).mockClear()
+    updateServiceWorker.mockReset().mockResolvedValue(undefined)
     registerAppServiceWorker()
   })
 
@@ -32,6 +38,20 @@ describe('registerAppServiceWorker', () => {
 
   it('registers the service worker immediately', () => {
     expect(getRegistrationOptions().immediate).toBe(true)
+  })
+
+  it('offers a user-triggered update when a new version is available', () => {
+    getRegistrationOptions().onNeedRefresh!()
+
+    expect(toast.info).toHaveBeenCalledWith('Nuova versione disponibile', {
+      duration: Infinity,
+      action: expect.objectContaining({ label: 'Aggiorna' }),
+    })
+    expect(updateServiceWorker).not.toHaveBeenCalled()
+
+    const action = vi.mocked(toast.info).mock.calls[0][1]?.action as Action
+    action.onClick({} as Parameters<Action['onClick']>[0])
+    expect(updateServiceWorker).toHaveBeenCalledTimes(1)
   })
 
   it('checks for updates every 3 hours', () => {
